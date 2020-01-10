@@ -1,0 +1,54 @@
+{% set controller = "ListingController" %}
+{% extends "base.html" %}
+{% block head %}
+    <style type="text/css">
+        [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+          display: none !important;
+        }
+    </style>
+
+    <link href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="/static/css/all.css" rel="stylesheet" crossorigin="anonymous">
+    <title>Перелік аукціонів</title>
+
+{% endblock %}
+
+{% block body %}
+<body>
+<noscript>
+  For full functionality of this site it is necessary to enable JavaScript.
+  Here are the http://www.enable-javascript.com
+  instructions how to enable JavaScript in your web browser.
+</noscript>
+{% raw %}
+<div class="container" ng-cloak>
+  <div class="list-group" >
+    <div
+      class="list-group-item text-center"
+      ng-repeat="auction in auctions">
+      <a ng-if="(auction.procurementMethodType||'').indexOf('esco') >= 0" href="/esco-tenders/{{ auction._id }}">
+        <h4 class="list-group-item-heading">
+          Тендер {{ auction.tenderID }}
+        </h4>
+      </a>
+      <a ng-if="(auction.procurementMethodType||'').indexOf('esco') === -1" href="/tenders/{{ auction._id }}">
+        <h4 class="list-group-item-heading">
+          Тендер {{ auction.tenderID }}
+        </h4>
+      </a>
+      <p class="list-group-item-text">
+        Час початку: {{ auction.start_at }}
+      </p>
+    </div>
+  </div>
+</div>
+{% endraw %}
+<script type=text/javascript>
+var db_url = location.protocol + '//' + location.host + '/database';
+</script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/angular.js/1.6.5/angular.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/0.13.0/ui-bootstrap-tpls.min.js"></script>
+<script type="text/javascript" src="/static/js/vendor.js"></script>
+<script type="text/javascript" src="/static/js/index.js"></script>
+</body>
+{% endblock %}
