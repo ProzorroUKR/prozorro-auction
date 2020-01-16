@@ -24,9 +24,8 @@ angular.module('auction').factory('AuctionUtils', [
           'msg': 'Tender cancelled'
         };
       }
-      if (auction.current_stage === undefined) {
+      if (auction.current_stage === -1) {
         var until_seconds = (new Date(auction.stages[0].start) - current_time) / 1000;
-        console.log("until_seconds " + until_seconds)
         if (until_seconds > -120){
           return {
             'countdown': (until_seconds) + Math.random(),
@@ -127,7 +126,7 @@ angular.module('auction').factory('AuctionUtils', [
           'rounds_seconds': 0,
         };
       }
-      if (auction.current_stage === undefined) {
+      if (auction.current_stage === -1) {
         var until_seconds = (new Date(auction.stages[0].start) - current_time) / 1000;
         if (until_seconds > -120){
           return {

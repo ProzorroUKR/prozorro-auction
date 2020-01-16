@@ -1,4 +1,4 @@
-.default: run
+.default: update-frontend
 
 
 update-frontend:

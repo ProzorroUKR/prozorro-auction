@@ -19,10 +19,8 @@
     "angular-translate-storage-local": "2.15.2",
     "angular-ui-bootstrap": "2.5.0",
     "bootstrap": "~3.2.0",
-    "event-source-polyfill": "https://github.com/Yaffle/EventSource/archive/0.0.3.tar.gz",
     "mathjs": "2.3.0",
     "moment-timezone": "0.2.5",
-    "pouchdb": "http://op:x9W3jZ@dist.quintagroup.com/op/pouchdb-5.1.1-prerelease-openprocurement.tgz",
     "ua-parser-js": "0.7.10",
     "yarn": "^1.21.1"
   },

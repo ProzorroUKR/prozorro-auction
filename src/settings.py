@@ -6,6 +6,7 @@ import os
 PORT = int(os.environ.get("PORT", 8000))
 TZ = pytz.timezone(os.environ.get("TZ", "Europe/Kiev"))
 USER_AGENT = os.environ.get("USER_AGENT", "Auction 2.0")
+TEST_MODE = os.environ.get("TEST_MODE", False)
 
 
 API_HOST = os.environ.get("API_HOST", "https://lb-api-sandbox.prozorro.gov.ua")
@@ -29,7 +30,6 @@ DS_HEADERS = {
     "Authorization": f"Basic {DS_TOKEN}",
     "User-Agent": USER_AGENT,
 }
-print(DS_HEADERS)
 
 
 PROCUREMENT_TYPES = os.environ.get(

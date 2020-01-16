@@ -1,5 +1,5 @@
 from copy import deepcopy
-from settings import logger
+from settings import logger, TEST_MODE, AUCTION_HOST
 from datetime import timedelta
 from fractions import Fraction
 from utils import convert_datetime, get_now
@@ -37,6 +37,7 @@ def get_data_from_tender(tender):
     )
     active_bids = [b for b in tender.get("bids", []) if b["status"] == "active"]
     tender_auction = dict(
+        mode=TEST_MODE and tender.get("submissionMethodDetails"),
         is_cancelled=tender.get("status") in ("cancelled", "unsuccessful"),
         tender_id=tender.get("id"),
         title=tender.get("title"),
@@ -120,27 +121,56 @@ def copy_bid_tokens(source, dst):
                 break
 
 
+def build_urls_patch(auction, tender):
+    auction_url = f"{AUCTION_HOST}/tenders/{auction['_id']}"
+    patch_bids = []
+    patch_data = {"data": {"auctionUrl": auction_url, "bids": patch_bids}}
+    for tender_bid in tender["bids"]:
+        bid_patch = {}
+        patch_bids.append(bid_patch)
+
+        for bid in auction["bids"]:
+            if tender_bid["id"] == bid["id"]:
+                participation_url = f"{auction_url}/login?bidder_id={bid['id']}&hash={bid['hash']}"
+                if auction["lot_id"]:
+                    bid_patch.update(
+                        lotValues=[
+                            {"participationUrl": participation_url}
+                            if auction["lot_id"] == lot_bid['relatedLot'] else
+                            {}
+                            for lot_bid in tender_bid['lotValues']
+                        ],
+                    )
+                else:
+                    bid_patch.update(
+                        participationUrl=participation_url,
+                    )
+                break
+
+    return patch_data
+
+
 def get_auctions_from_tender(tender):
     for auction in get_data_from_tender(tender):
         auction["start_at"] = convert_datetime(auction["start_at"])
         if auction["start_at"] < get_now():
             logger.info(f"Skipping {auction['_id']} start date {auction['start_at']} in the past")
 
-        fast_forward = tender.get("submissionMethodDetails") == "quick(mode:fast-forward)"
-        if fast_forward:
-            auction["start_at"] = get_now() + timedelta(seconds=1)
-        auction["stages"] = build_stages(auction, fast_forward)
+        auction["stages"] = build_stages(auction)
+        auction["current_stage"] = -1
         auction["timer"] = auction["start_at"]   # for chronograph update
         yield auction
 
 
-def build_stages(tender, fast_forward=False):
-    start_at = tender["start_at"]
-    two_min = 2 * 50
-    five_min = 5 * 60
-    if fast_forward:
+def build_stages(auction):
+    if auction["mode"] == "quick(mode:fast-forward)":
         two_min = five_min = 0
+        auction["start_at"] = get_now()
+    else:
+        two_min = 2 * 50
+        five_min = 5 * 60
 
+    start_at = auction["start_at"]
     stages = []
     for n in range(3):  # rounds
         stages.append(
@@ -150,11 +180,11 @@ def build_stages(tender, fast_forward=False):
             )
         )
         start_at += timedelta(seconds=two_min if n else five_min)
-        for _ in range(len(tender["bids"])):
+        for _ in range(len(auction["bids"])):
             stages.append(
                 dict(
                     start=start_at,
-                    type="bid",
+                    type="bids",
                     bidder_id="TBD",
                     label=dict(en="TBD", uk="TBD", ru="TBD"),
                 )

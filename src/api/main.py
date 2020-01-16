@@ -1,6 +1,6 @@
 from aiohttp import web
 from settings import PORT, TZ, logger
-from storage import read_auction_list, get_auction, update_auction
+from api.storage import read_auction_list, get_auction, insert_auction, update_auction_bid_stage
 from datetime import datetime, timedelta
 from databridge.model import build_stages
 from utils import get_now
@@ -39,6 +39,15 @@ async def create_test(request):
     start_at = datetime.now(tz=TZ) + timedelta(seconds=30)
     data = dict(
         _id=uid,
+        lot_id=None,
+        tender_id="",
+        mode=None,
+        current_stage=-1,
+        minimalStep={
+           "currency": "UAH",
+           "amount": 35,
+           "valueAddedTaxIncluded": True
+        },
         procurementMethodType="belowThreshold",
         tenderID=f"UA-{uid}",
         start_at=start_at,
@@ -55,19 +64,19 @@ async def create_test(request):
                 "hash": uuid.uuid4().hex,
                 "date": "2019-08-12T14:53:52+03:00",
                 "name": "Bidder#1 Name",
-                "value": 132.22,
+                "value": {"amount": 132.22},
             },
             {
                 "id": "b" * 32,
                 "hash": uuid.uuid4().hex,
                 "date": "2019-08-12T15:53:52+03:00",
                 "name": "Bidder#2 Name",
-                "value": 232.66,
+                "value": {"amount": 232.66},
             }
         ]
     )
     data["stages"] = build_stages(data)
-    await update_auction(data, insert=True)
+    await insert_auction(data)
     return json_response(data, status=200)
 
 
@@ -106,7 +115,7 @@ async def post_bid(request):
 
             current_stage = auction.get("current_stage", 0)
             auction_stage = auction["stages"][current_stage]
-            if auction_stage["type"] != "bid" or auction_stage["bidder"] != bidder_id:
+            if auction_stage["type"] != "bids" or auction_stage["bidder_id"] != bidder_id:
                 raise web.HTTPBadRequest(text='You are not allowed to bid at the moment')
 
             hash_value = request.rel_url.query.get("hash")
@@ -114,21 +123,48 @@ async def post_bid(request):
                 raise web.HTTPForbidden()
 
             data = await request.json()
-            if "value" not in data:
-                raise web.HTTPBadRequest(text='"value" is required')
+            if "amount" not in data:
+                raise web.HTTPBadRequest(text='"amount" is required')
 
-            value = data["value"]
+            # -1 means cancelling this stage bid (should be deleted from db)
+            amount = data["amount"]
+            stage_value = "" if amount == -1 else dict(amount=amount, time=get_now())
+            await update_auction_bid_stage(_id, bidder_id, current_stage, stage_value)
 
-            stages = bid.get("stages", {})
-            stages[str(current_stage)] = dict(amount=value, time=get_now())
-            bid["stages"] = stages
-
-            await update_auction(auction, fields=("bids",))
-
-            logger.info(f"Bidder {bidder_id} posted bid: {value}")
-            return json_response({"value": value}, status=200)
+            logger.info(f"Bidder {bidder_id} posted bid: {amount}")
+            return json_response({"amount": amount}, status=200)
     else:
         raise web.HTTPNotFound()
+
+
+@routes.post('/api/auctions/{auction_id}/check_authorization')
+async def check_authorization(request):
+    data = await request.json()
+    if "bidder_id" in data and "hash" in data:
+        bidder_id, token = data["bidder_id"], data["hash"]
+        client_id = data.get("client_id")
+
+        _id = request.match_info["auction_id"]
+        auction = await get_auction(_id, fields=("bids", "stages", "current_stage"))
+
+        for bid in auction["bids"]:
+            if bid["id"] == bidder_id:
+                if bid["hash"] != token:
+                    raise web.HTTPUnauthorized(text="hash is invalid")
+
+                # get bids saved amount on this stage
+                amount = None
+                current_stage = auction.get("current_stage", 0)
+                auction_stage = auction["stages"][current_stage]
+                if auction_stage["type"] == "bids" and auction_stage["bidder_id"] == bidder_id:
+                    amount = bid.get("stages", {}).get(str(current_stage), {}).get("amount")
+
+                logger.info(f"Bidder {bidder_id} from {client_id} has passed check authorization: {amount}")
+                return json_response({"amount": amount}, status=200)
+        else:
+            raise web.HTTPUnauthorized(text="Bidder not found")
+    else:
+        raise web.HTTPUnauthorized(text="bidder_id or hash not provided")
 
 
 def create_application():

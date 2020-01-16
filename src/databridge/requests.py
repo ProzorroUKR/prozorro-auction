@@ -1,0 +1,54 @@
+from base_requests import request_tender as base_request_tender
+from settings import logger, CONNECTION_ERROR_INTERVAL, TOO_MANY_REQUESTS_INTERVAL
+from exceptions import RequestRetryException
+import asyncio
+
+
+async def get_tender_document(session, tender, private_only=False, public_only=False):
+    # TODO add to /auction api response required public data (procuringEntity, title, description..
+    # TODO .. bid.tenderers ?
+    if public_only:
+        public_data = await get_tender_data(session, tender["id"])
+        tender.update(public_data)
+    elif private_only:
+        private_data = await get_tender_data(session, tender["id"], url_suffix="/auction")
+        tender.update(private_data)
+    else:
+        public_data, private_data = await asyncio.gather(
+            get_tender_data(session, tender["id"]),
+            get_tender_data(session, tender["id"], url_suffix="/auction")
+        )
+        tender.update(public_data)
+        tender.update(private_data)
+        for bid in tender.get("bids", ""):
+            for public_bid in public_data.get("bids", ""):
+                if bid["id"] == public_bid["id"]:
+                    bid.update(public_bid)
+        for lot in tender.get("lots", ""):
+            for public_lot in public_data.get("lots", ""):
+                if lot["id"] == public_lot["id"]:
+                    lot.update(public_lot)
+    return tender
+
+
+async def get_tender_data(session, tender_id, url_suffix=""):
+    return await request_tender(session, tender_id, url_suffix=url_suffix)
+
+
+async def patch_tender_auction(session, tender_id, json):
+    return await request_tender(session, tender_id, json, url_suffix="/auction",  method_name="patch")
+
+
+async def request_tender(session, tender_id, json=None, method_name="get", url_suffix="", retries=20):
+    while True:
+        try:
+            result = await base_request_tender(session=session, tender_id=tender_id, json=json,
+                                               method_name=method_name, url_suffix=url_suffix)
+        except RequestRetryException as e:
+            retries -= 1
+            if retries < 1:  # only critical logs for now
+                logger.critical("Too many retries while requesting tender",
+                                extra={"MESSAGE_ID": "TOO_MANY_REQUEST_RETRIES"})
+            await asyncio.sleep(e.timeout)
+        else:
+            return result

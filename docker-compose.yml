@@ -46,6 +46,7 @@ services:
     build: .
     environment:
       - MONGODB_URL=mongodb://root:example@mongo:27017
+      - TEST_MODE=1
       - PYTHONUNBUFFERED=1
       - PUBLIC_API_HOST=http://api
       - API_HOST=http://api

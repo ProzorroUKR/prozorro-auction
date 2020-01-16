@@ -1,42 +1,9 @@
-from settings import logger, API_HEADERS
-from datetime import datetime
-from actions.results import upload_audit_document, send_auction_results
-from api_requests import get_tender_document, post_tender_auction
-import aiohttp
+from settings import logger
+from yaml import safe_dump
 
 
-async def tick_auction(auction):
-    current_stage = auction.get("current_stage", -1)
-    stages = auction.get("stages")
-
-    next_stage_index = current_stage + 1
-    if next_stage_index >= len(stages):
-        return logger.warning(f"Chronograph tries to update {auction['id']} to a non-existed stage {next_stage_index}")
-
-    next_stage = stages[next_stage_index]
-    if next_stage["start"] > datetime.now():
-        return logger.warning(f"Chronograph tries to update {auction['id']} too early {next_stage['start']}")
-
-    # TODO: mb "end stage" and "start stage" methods should be proceeded distinctly
-    # run end stage method
-    if current_stage > -1:
-        this_stage = stages[current_stage]
-        end_method = globals().get(f"on_end_stage_{this_stage['type']}")
-        if end_method:
-            await end_method(auction)
-
-    # start next stage method
-    start_method = globals().get(f"on_start_stage_{next_stage['type']}")
-    if start_method:
-        await start_method(auction)
-
-    # update stage fields
-    auction["current_stage"] = next_stage_index
-    next_stage = auction["current_stage"] + 1
-    if next_stage < len(stages):
-        auction["timer"] = stages[next_stage]["start"]
-    else:
-        auction["timer"] = None
+def sort_bids(bids):
+    return sorted(bids, key=lambda b: (b["value"]["amount"], b["date"]), reverse=True)
 
 
 def get_label_dict(n):
@@ -54,44 +21,22 @@ def get_bidder_number(uid, initial_bids):
             return n
 
 
-async def on_start_stage_pause(auction):
-    current_stage = auction.get("current_stage", -1)
-    # set initial_bids
-    if current_stage == -1:
-        logger.info("Set initial bids")
-        auction["initial_bids"] = [
-            dict(
-                bidder_id=bid["id"],
-                amount=bid["value"]["amount"],
-                time=bid["date"],
-                label=get_label_dict(n),
-            )
-            for n, bid in enumerate(sort_bids(auction["bids"]))
-        ]
-
-    # set "bidder" for bid rounds according to the bids they made before
-    stages = auction.get("stages")
-    index = current_stage + 2
-    logger.info(f"Set {index}:{index + len(auction['bids'])} bid stages order")
-    for i, bid in enumerate(sort_bids(auction["bids"])):
-        stages[index + i].update(
+def update_auction_results(auction):
+    auction["results"] = [
+        dict(
             bidder_id=bid["id"],
+            amount=bid["value"]["amount"],
+            time=bid["date"],
             label=get_label_dict(
                 get_bidder_number(bid["id"], auction["initial_bids"])
             )
         )
+        for bid in sort_bids(auction["bids"])
+    ]
 
 
-def sort_bids(bids):
-    return sorted(bids, key=lambda b: (b["value"]["amount"], b["date"]), reverse=True)
-
-
-async def on_end_stage_bid(auction):
-    """
-    copy posted bid to "bids" field
-    """
+def publish_bids_made_in_current_stage(auction):
     current_stage = auction.get("current_stage")
-
     stage = auction["stages"][current_stage]
     bidder_id = stage["bidder_id"]
     if bidder_id is None:
@@ -103,43 +48,94 @@ async def on_end_stage_bid(auction):
                 current_stage_str = str(current_stage)
                 if bid_stages and current_stage_str in bid_stages and \
                         bid_stages[current_stage_str].get("amount") is not None:
+                    stage["changed"] = True
                     bid["value"]["amount"] = stage["amount"] = bid_stages[current_stage_str]["amount"]
                     bid["date"] = stage["time"] = bid_stages[current_stage_str]["time"]
                     logger.info(f"Publishing bidder {bidder_id} posted bid: {bid_stages[current_stage_str]}")
                 else:
-                    stage["amount"] = bid["value"]["amount"]
-                    stage["time"] = bid["date"]
-                    logger.info(f"Copying bidder {bidder_id} unchanged bid: {stage}")
+                    logger.info(f"Bidder {bidder_id} has not changed its bid")
                 break
+        else:
+            logger.critical(f"WTF bidder from {current_stage} not found")
 
 
-async def on_start_stage_pre_announcement(auction):
-    """
-    1 upload audit document
-    2 send auction results to tenders api
-    """
-    async with aiohttp.ClientSession(headers=API_HEADERS) as session:
-        tender = await get_tender_document(session, {"id": auction["tender_id"]})
-        await upload_audit_document(session, auction, tender)
-        await send_auction_results(session, auction, tender)
-
-
-async def on_start_stage_announcement(auction):
-    """
-    reveal tenderer names
-    """
-    async with aiohttp.ClientSession(headers=API_HEADERS) as session:
-        tender = await get_tender_document(session, {"id": auction["tender_id"]}, public_only=True)
-        bid_names = {
-            b["id"]: b["tenderers"][0]["name"]
-            for b in tender.get("bids", "")
+def build_audit_document(auction):
+    timeline = {
+        "auction_start": {
+            "initial_bids": auction["initial_bids"],
+            "time": auction["start_at"],
+        },
+        "results": {
+            "bids": auction["bids"],
+            "time": auction["stages"][-1]["start"]
         }
-        for section_name in ("initial_bids", "stages"):
-            for section in auction[section_name]:
-                if "bidder_id" in section and section['bidder_id'] in bid_names:
-                    section["label"] = dict(
-                        uk=bid_names[section['bidder_id']],
-                        ru=bid_names[section['bidder_id']],
-                        en=bid_names[section['bidder_id']],
-                    )
 
+    }
+    audit = {
+        "id": auction["_id"],
+        "tenderId": auction["tenderID"],
+        "tender_id": auction["tender_id"],
+        "lot_id": auction["lot_id"],
+        "timeline": timeline
+    }
+    if auction["lot_id"]:
+        audit["lot_id"] = auction["lot_id"]
+
+    round_number = turn = 0
+    for stage in auction["stages"]:
+        if stage["type"] == "pause":
+            round_number += 1
+            turn = 0
+        elif stage["type"] == "bid":
+            turn += 1
+            label = f"round_{round_number}"
+            if label not in timeline:
+                timeline[label] = {}
+            timeline[label][f"turn_{turn}"] = dict(
+                amount=stage["amount"],
+                bidder=stage["bidder_id"],
+                time=stage["start"]
+            )
+            if auction["features"]:
+                timeline[label][f"turn_{turn}"]["amount_features"] = str(stage.get("amount_features"))
+                timeline[label][f"turn_{turn}"]["coeficient"] = str(stage.get("coeficient"))
+
+    file_data = safe_dump(audit, default_flow_style=False)
+    file_name = f"audit_{auction['_id']}.yaml"
+    return file_name, file_data
+
+
+def get_doc_id_from_filename(documents, file_name):
+    for doc in documents:
+        if doc["title"] == file_name:
+            return doc["id"]
+
+
+def build_results_bids_patch(auction, tender_bids):
+    bids_patch = []
+    data = {'data': {'bids': bids_patch}}
+    for bid_info in tender_bids:
+        patch_line = {}
+        bids_patch.append(patch_line)
+
+        for bid in auction["bids"]:
+            if bid_info["id"] == bid["id"]:
+                if auction["lot_id"]:
+                    patch_line.update(
+                        lotValues=[
+                            {
+                                "value": {"amount": bid["value"]["amount"]},
+                                "date": bid["date"]
+                            }
+                            if auction["lot_id"] == lot_bid['relatedLot']
+                            else {}
+                            for lot_bid in bid_info['lotValues']
+                        ]
+                    )
+                else:
+                    patch_line.update(
+                        value={"amount": bid["value"]["amount"]},
+                        date=bid["date"],
+                    )
+                break
+    return data
