@@ -1,9 +1,19 @@
-from settings import logger
+from settings import logger, TZ
 from yaml import safe_dump
+from utils import datetime_to_str
+from fractions import Fraction
 
 
 def sort_bids(bids):
-    return sorted(bids, key=lambda b: (b["value"]["amount"], b["date"]), reverse=True)
+    result = sorted(
+        bids,
+        key=lambda b: (
+            Fraction(b["amount_features"]) if b.get("amount_features") else b["value"]["amount"],
+            b["date"]
+        ),
+        reverse=True
+    )
+    return result
 
 
 def get_label_dict(n):
@@ -26,6 +36,8 @@ def update_auction_results(auction):
         dict(
             bidder_id=bid["id"],
             amount=bid["value"]["amount"],
+            amount_features=bid.get("amount_features"),
+            coeficient=bid.get("coeficient"),
             time=bid["date"],
             label=get_label_dict(
                 get_bidder_number(bid["id"], auction["initial_bids"])
@@ -50,6 +62,8 @@ def publish_bids_made_in_current_stage(auction):
                         bid_stages[current_stage_str].get("amount") is not None:
                     stage["changed"] = True
                     bid["value"]["amount"] = stage["amount"] = bid_stages[current_stage_str]["amount"]
+                    if auction["features"]:
+                        bid['amount_features'] = str(Fraction(stage['amount']) / Fraction(bid["coeficient"]))
                     bid["date"] = stage["time"] = bid_stages[current_stage_str]["time"]
                     logger.info(f"Publishing bidder {bidder_id} posted bid: {bid_stages[current_stage_str]}")
                 else:
@@ -63,11 +77,18 @@ def build_audit_document(auction):
     timeline = {
         "auction_start": {
             "initial_bids": auction["initial_bids"],
-            "time": auction["start_at"],
+            "time": datetime_to_str(auction["start_at"]),
         },
         "results": {
-            "bids": auction["bids"],
-            "time": auction["stages"][-1]["start"]
+            "bids": [
+                {
+                    "bidder": b["id"],
+                    "amount": b["value"]["amount"],
+                    "time": datetime_to_str(b["date"]),
+                }
+                for b in auction["bids"]
+            ],
+            "time": datetime_to_str(auction["stages"][-1]["start"])
         }
 
     }
@@ -75,7 +96,6 @@ def build_audit_document(auction):
         "id": auction["_id"],
         "tenderId": auction["tenderID"],
         "tender_id": auction["tender_id"],
-        "lot_id": auction["lot_id"],
         "timeline": timeline
     }
     if auction["lot_id"]:
@@ -94,12 +114,12 @@ def build_audit_document(auction):
             timeline[label][f"turn_{turn}"] = dict(
                 amount=stage["amount"],
                 bidder=stage["bidder_id"],
-                time=stage["start"]
+                time=datetime_to_str(stage["start"])
             )
             if auction["features"]:
                 timeline[label][f"turn_{turn}"]["amount_features"] = str(stage.get("amount_features"))
                 timeline[label][f"turn_{turn}"]["coeficient"] = str(stage.get("coeficient"))
-
+    print(audit)
     file_data = safe_dump(audit, default_flow_style=False)
     file_name = f"audit_{auction['_id']}.yaml"
     return file_name, file_data
@@ -125,7 +145,7 @@ def build_results_bids_patch(auction, tender_bids):
                         lotValues=[
                             {
                                 "value": {"amount": bid["value"]["amount"]},
-                                "date": bid["date"]
+                                "date": datetime_to_str(bid["date"])
                             }
                             if auction["lot_id"] == lot_bid['relatedLot']
                             else {}
@@ -135,7 +155,7 @@ def build_results_bids_patch(auction, tender_bids):
                 else:
                     patch_line.update(
                         value={"amount": bid["value"]["amount"]},
-                        date=bid["date"],
+                        date=datetime_to_str(bid["date"]),
                     )
                 break
     return data

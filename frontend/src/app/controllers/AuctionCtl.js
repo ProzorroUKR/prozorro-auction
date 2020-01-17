@@ -293,62 +293,45 @@ angular.module('auction').controller('AuctionController',[
                'amount': parseFloat(bid) || parseFloat($rootScope.form.bid) || 0,
             }
         ).then(function(success) {
-          $rootScope.remove_failed_request_warning();
-          if ($rootScope.post_bid_timeout){
-            $timeout.cancel($rootScope.post_bid_timeout);
-            delete $rootScope.post_bid_timeout;
-          }
-          $rootScope.form.active = false;
-          var msg_id = '';
-          if (success.data.status == 'failed') {
-            for (var error_id in success.data.errors) {
-              for (var i in success.data.errors[error_id]) {
-                msg_id = Math.random();
-                $rootScope.alerts.push({
-                  msg_id: msg_id,
-                  type: 'danger',
-                  msg: success.data.errors[error_id][i]
-                });
-                $log.info({
-                  message: "Handle failed response on post bid",
-                  bid_data: success.data.errors[error_id][i]
-                });
-                $rootScope.auto_close_alert(msg_id);
-              }
+            $rootScope.remove_failed_request_warning();
+            if ($rootScope.post_bid_timeout){
+                $timeout.cancel($rootScope.post_bid_timeout);
+                delete $rootScope.post_bid_timeout;
             }
-          } else {
+            $rootScope.form.active = false;
+
             var bid = success.data.amount;
             var msg_id = Math.random();
             if (bid == -1) {
-              $rootScope.alerts = [];
-              $rootScope.allow_bidding = true;
-              $log.info({
-                message: "Handle cancel bid response on post bid"
-              });
-              $rootScope.alerts.push({
-                msg_id: msg_id,
-                type: 'success',
-                msg: 'Bid canceled'
-              });
-              $log.info({
-                message: "Handle cancel bid response on post bid"
-              });
-              $rootScope.form.bid = "";
-              $rootScope.form.full_price = '';
+                $rootScope.alerts = [];
+                $rootScope.allow_bidding = true;
+                $log.info({
+                    message: "Handle cancel bid response on post bid"
+                });
+                $rootScope.alerts.push({
+                    msg_id: msg_id,
+                    type: 'success',
+                    msg: 'Bid canceled'
+                });
+                $log.info({
+                    message: "Handle cancel bid response on post bid"
+                });
+                $rootScope.form.bid = "";
+                $rootScope.form.full_price = '';
             } else {
-              $log.info({
-                message: "Handle success response on post bid",
-                bid_data: bid
-              });
-              $rootScope.alerts.push({
-                msg_id: msg_id,
-                type: 'success',
-                msg: 'Bid placed'
-              });
-              $rootScope.allow_bidding = false;
+                $log.info({
+                    message: "Handle success response on post bid",
+                    bid_data: bid
+                });
+                $rootScope.alerts.push({
+                    msg_id: msg_id,
+                    type: 'success',
+                    msg: 'Bid placed'
+                });
+                $rootScope.allow_bidding = false;
             }
             $rootScope.auto_close_alert(msg_id);
-          }
+
         }, function(error) {
             $log.info({
               message: "Handle error on post bid",
@@ -358,20 +341,31 @@ angular.module('auction').controller('AuctionController',[
               $timeout.cancel($rootScope.post_bid_timeout);
               delete $rootScope.post_bid_timeout;
             }
-            if (error.status == 401) {
+            if (error.status == 400){
+                $rootScope.remove_failed_request_warning();
+                console.log(error.data);
+                var msg_id = Math.random();
+                $rootScope.alerts.push({
+                  msg_id: msg_id,
+                  type: 'danger',
+                  msg: error.data.error
+                });
+                $log.info({
+                  message: "Handle failed response on post bid",
+                  bid_data: error.data.error
+                });
+                $rootScope.auto_close_alert(msg_id);
+
+            } else if (error.status == 401) {
               $rootScope.remove_failed_request_warning();
               $rootScope.alerts.push({
                 msg_id: Math.random(),
                 type: 'danger',
-                msg: 'Ability to submit bids has been lost. Wait until page reloads, and retry.'
+                msg: 'Ability to submit bids has been lost. Use the valid participation link to enter the auction.'
               });
               $log.error({
-                message: "Ability to submit bids has been lost. Wait until page reloads, and retry."
+                message: "Ability to submit bids has been lost."
               });
-              relogin = function() {
-                window.location.replace(window.location.href + '/relogin?amount=' + $rootScope.form.bid);
-              }
-              $timeout(relogin, 3000);
             } else {
               $log.error({
                 message: "Unhandled Error while post bid",

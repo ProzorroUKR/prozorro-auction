@@ -52,6 +52,8 @@ async def on_start_stage_pause(auction):
             dict(
                 bidder_id=bid["id"],
                 amount=bid["value"]["amount"],
+                amount_features=bid.get("amount_features"),
+                coeficient=bid.get("coeficient"),
                 time=bid["date"],
                 label=get_label_dict(n),
             )
@@ -66,6 +68,8 @@ async def on_start_stage_pause(auction):
         stages[index + i].update(
             bidder_id=bid["id"],
             amount=bid["value"]["amount"],
+            amount_features=bid.get("amount_features"),
+            coeficient=bid.get("coeficient"),
             time=bid["date"],
             label=get_label_dict(
                 get_bidder_number(bid["id"], auction["initial_bids"])

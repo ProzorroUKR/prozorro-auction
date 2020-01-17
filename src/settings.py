@@ -3,7 +3,7 @@ from base64 import b64encode
 import pytz
 import os
 
-PORT = int(os.environ.get("PORT", 8000))
+API_PORT = int(os.environ.get("API_PORT", 8000))
 TZ = pytz.timezone(os.environ.get("TZ", "Europe/Kiev"))
 USER_AGENT = os.environ.get("USER_AGENT", "Auction 2.0")
 TEST_MODE = os.environ.get("TEST_MODE", False)

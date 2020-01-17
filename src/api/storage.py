@@ -9,7 +9,7 @@ LIST_FIELDS = (
     "_id", "title", "title_en", "start_at", "procurementMethodType", "tenderID"
 )
 GET_FIELDS = (
-    "_id", "procurementMethodType", "tenderID", "title", "title_en", "procuringEntity", "items",
+    "_id", "auction_type", "procurementMethodType", "tenderID", "title", "title_en", "procuringEntity", "items", "features",
     "start_at", "stages", "current_stage", "initial_bids", "results", "modified", "minimalStep",
 )
 

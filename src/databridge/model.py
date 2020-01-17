@@ -1,20 +1,8 @@
 from copy import deepcopy
 from settings import logger, TEST_MODE, AUCTION_HOST
 from datetime import timedelta
-from fractions import Fraction
-from utils import convert_datetime, get_now
+from utils import convert_datetime, get_now, calculate_coeficient, cooking
 import uuid
-
-
-def vn_max(features):
-    return sum(max(j['value'] for j in i['enum']) for i in features)
-
-
-def calculate_ratio(features, parameters):
-    v_max = Fraction(vn_max(features))
-    vn = sum([Fraction(i['value']) for i in parameters])
-    result = 1 + vn / (1 - v_max)
-    return result.numerator, result.denominator
 
 
 def filter_obj_keys(initial, keys):
@@ -35,7 +23,10 @@ def get_data_from_tender(tender):
             "relatedLot",
         )
     )
-    active_bids = [b for b in tender.get("bids", []) if b["status"] == "active"]
+    active_bids = [
+        b for b in tender.get("bids", [])
+        if b.get("status", "active") == "active"   # belowThreshold doesn't return "status" fields for auction role
+    ]
     tender_auction = dict(
         mode=TEST_MODE and tender.get("submissionMethodDetails"),
         is_cancelled=tender.get("status") in ("cancelled", "unsuccessful"),
@@ -77,17 +68,8 @@ def get_data_from_tender(tender):
                 for b in active_bids:
                     for lot_bid in b["lotValues"]:
                         if lot_bid['relatedLot'] == lot["id"] and lot_bid.get('status', 'active') == 'active':
-                            bid_data = {
-                                'id': b['id'],
-                                'hash': uuid.uuid4().hex,
-                                'name': b['tenderers'][0]['name'] if "tenderers" in b else None,
-                                'date': lot_bid['date'],
-                                'value': lot_bid['value']
-                            }
-                            if 'parameters' in b:
-                                bid_data['parameters'] = [i for i in b['parameters']
-                                                          if i['code'] in codes]
-                                bid_data['coeficient'] = calculate_ratio(tender["features"], bid_data['parameters'])
+                            parameters = [i for i in b.get("parameters", "") if i['code'] in codes]
+                            bid_data = get_bid_from_bid_data(b, lot_bid, features, parameters)
                             auction["bids"].append(bid_data)
                 yield auction
     else:
@@ -95,17 +77,28 @@ def get_data_from_tender(tender):
         if tender_auction["start_at"] is not None:
             tender_auction["_id"] = tender["id"]
             tender_auction["lot_id"] = None
-            tender_auction["bids"] = [
-                dict(
-                    id=b['id'],
-                    hash=uuid.uuid4().hex,
-                    name=b['tenderers'][0]['name'] if "tenderers" in b else None,
-                    date=b['date'],
-                    value=b['value'],
-                )
-                for b in active_bids
-            ]
+            tender_auction["bids"] = []
+            for bid in active_bids:
+                bid_data = get_bid_from_bid_data(bid, bid, features, bid.get("parameters"))
+                tender_auction["bids"].append(bid_data)
             yield tender_auction
+
+
+def get_bid_from_bid_data(bid, lot_bid, features, parameters):
+    bid_data = dict(
+        id=bid['id'],
+        hash=uuid.uuid4().hex,
+        name=bid['tenderers'][0]['name'] if "tenderers" in bid else None,
+        date=lot_bid['date'],
+        value=lot_bid['value'],
+    )
+    if parameters:
+        bid_data["parameters"] = parameters
+        bid_data["coeficient"] = str(
+            calculate_coeficient(features, parameters)
+        )
+        bid_data["amount_features"] = str(cooking(bid["value"]["amount"], features, parameters))
+    return bid_data
 
 
 def copy_bid_tokens(source, dst):
@@ -155,11 +148,11 @@ def get_auctions_from_tender(tender):
         auction["start_at"] = convert_datetime(auction["start_at"])
         if auction["start_at"] < get_now():
             logger.info(f"Skipping {auction['_id']} start date {auction['start_at']} in the past")
-
-        auction["stages"] = build_stages(auction)
-        auction["current_stage"] = -1
-        auction["timer"] = auction["start_at"]   # for chronograph update
-        yield auction
+        else:
+            auction["stages"] = build_stages(auction)
+            auction["current_stage"] = -1
+            auction["timer"] = auction["start_at"]   # for chronograph update
+            yield auction
 
 
 def build_stages(auction):
