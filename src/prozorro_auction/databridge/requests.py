@@ -1,6 +1,6 @@
-from base_requests import request_tender as base_request_tender
-from settings import logger, CONNECTION_ERROR_INTERVAL, TOO_MANY_REQUESTS_INTERVAL
-from exceptions import RequestRetryException, SkipException
+from prozorro_auction.base_requests import request_tender as base_request_tender
+from prozorro_auction.settings import logger, CONNECTION_ERROR_INTERVAL, TOO_MANY_REQUESTS_INTERVAL
+from prozorro_auction.exceptions import RequestRetryException, SkipException
 import asyncio
 
 

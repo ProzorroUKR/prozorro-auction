@@ -1,6 +1,6 @@
-from settings import logger, TZ
+from prozorro_auction.settings import logger
 from yaml import safe_dump
-from utils import datetime_to_str
+from prozorro_auction.utils import datetime_to_str
 from fractions import Fraction
 
 

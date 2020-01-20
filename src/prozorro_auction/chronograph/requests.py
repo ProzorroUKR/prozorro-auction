@@ -1,7 +1,7 @@
-from settings import DS_URL, DS_HEADERS, CONNECTION_ERROR_INTERVAL, logger
-from exceptions import RequestRetryException, RetryException
+from prozorro_auction.settings import DS_URL, DS_HEADERS, CONNECTION_ERROR_INTERVAL, logger
+from prozorro_auction.exceptions import RequestRetryException, RetryException
 from json.decoder import JSONDecodeError
-from base_requests import request_tender
+from prozorro_auction.base_requests import request_tender
 import aiohttp
 
 

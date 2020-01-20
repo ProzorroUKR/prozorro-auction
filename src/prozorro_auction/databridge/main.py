@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 from prozorro_crawler.main import main
-from databridge.tasks import schedule_auction
-from databridge.model import get_auctions_from_tender, get_canceled_auctions_from_tender
-from databridge.requests import get_tender_document
-from databridge.storage import prepare_storage, update_auction
-from settings import API_TOKEN, PROCUREMENT_TYPES, logger
+from prozorro_auction.databridge.tasks import schedule_auction
+from prozorro_auction.databridge.model import get_auctions_from_tender, get_canceled_auctions_from_tender
+from prozorro_auction.databridge.requests import get_tender_document
+from prozorro_auction.databridge.storage import prepare_storage, update_auction
+from prozorro_auction.settings import API_TOKEN, PROCUREMENT_TYPES, logger
 import asyncio
 
 

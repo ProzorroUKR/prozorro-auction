@@ -1,6 +1,6 @@
-from chronograph.requests import upload_document, publish_tender_document, post_tender_auction
-from chronograph.model import build_audit_document, build_results_bids_patch, get_doc_id_from_filename
-from settings import logger
+from prozorro_auction.chronograph.requests import upload_document, publish_tender_document, post_tender_auction
+from prozorro_auction.chronograph.model import build_audit_document, build_results_bids_patch, get_doc_id_from_filename
+from prozorro_auction.settings import logger
 
 
 async def upload_audit_document(session, auction, documents):

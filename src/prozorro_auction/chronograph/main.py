@@ -1,7 +1,7 @@
-from chronograph.storage import increase_and_read_expired_timer, update_auction
-from chronograph.stages import tick_auction
-from exceptions import RetryException
-from settings import logger, PROCESSING_LOCK
+from prozorro_auction.chronograph.storage import increase_and_read_expired_timer, update_auction
+from prozorro_auction.chronograph.stages import tick_auction
+from prozorro_auction.exceptions import RetryException
+from prozorro_auction.settings import logger, PROCESSING_LOCK
 from time import time
 import asyncio
 import signal

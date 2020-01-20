@@ -53,7 +53,7 @@ services:
       - API_TOKEN=auction
       - FEED_STEP_INTERVAL=5
       - API_LIMIT=50
-    command: databridge.main
+    command: prozorro_auction.databridge.main
     volumes:
       - ./src:/app
     depends_on:
@@ -73,7 +73,7 @@ services:
       - DS_HOST=http://ds
       - DS_USER=test
       - DS_PASSWORD=test
-    command: chronograph.main
+    command: prozorro_auction.chronograph.main
     volumes:
       - ./src:/app
     depends_on:

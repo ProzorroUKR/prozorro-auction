@@ -1,5 +1,5 @@
-from api.utils import ValidationError, ForbiddenError
-from settings import logger, TZ
+from prozorro_auction.api.utils import ValidationError, ForbiddenError
+from prozorro_auction.settings import logger, TZ
 from fractions import Fraction
 from datetime import datetime, timedelta
 import uuid

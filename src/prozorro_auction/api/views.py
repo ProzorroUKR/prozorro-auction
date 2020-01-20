@@ -1,10 +1,10 @@
-from settings import logger, TZ
-from api.storage import read_auction_list, get_auction, insert_auction, update_auction_bid_stage
-from api.utils import json_response, ValidationError
-from api.model import get_test_auction, validate_posted_bid_amount
-from databridge.model import build_stages
+from prozorro_auction.settings import logger
+from prozorro_auction.api.storage import read_auction_list, get_auction, insert_auction, update_auction_bid_stage
+from prozorro_auction.api.utils import json_response
+from prozorro_auction.api.model import get_test_auction, validate_posted_bid_amount
+from prozorro_auction.databridge.model import build_stages
 from aiohttp import web
-from utils import get_now
+from prozorro_auction.utils import get_now
 
 
 routes = web.RouteTableDef()

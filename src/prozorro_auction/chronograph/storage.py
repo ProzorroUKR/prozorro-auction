@@ -1,5 +1,5 @@
-from storage import get_mongodb_collection
-from settings import logger, TZ, PROCESSING_LOCK, MONGODB_ERROR_INTERVAL
+from prozorro_auction.storage import get_mongodb_collection
+from prozorro_auction.settings import logger, TZ, PROCESSING_LOCK, MONGODB_ERROR_INTERVAL
 from pymongo.errors import PyMongoError
 from datetime import datetime, timedelta
 import asyncio

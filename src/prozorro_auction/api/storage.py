@@ -1,5 +1,5 @@
-from storage import get_mongodb_collection
-from settings import logger
+from prozorro_auction.storage import get_mongodb_collection
+from prozorro_auction.settings import logger
 from pymongo import DESCENDING
 from pymongo.errors import PyMongoError
 from aiohttp import web

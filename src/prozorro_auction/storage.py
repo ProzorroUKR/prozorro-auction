@@ -1,8 +1,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
-from settings import (
+from prozorro_auction.settings import (
     MONGODB_COLLECTION, MONGODB_URL,
     MONGODB_DATABASE, MONGODB_WRITE_CONCERN,
-    MONGODB_ERROR_INTERVAL, logger,
 )
 DB_CONNECTION = None
 

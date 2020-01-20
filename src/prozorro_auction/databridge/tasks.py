@@ -1,9 +1,9 @@
-from settings import logger
-from databridge.requests import patch_tender_auction
-from databridge.model import copy_bid_tokens, build_urls_patch
-from databridge.storage import update_auction, read_auction
-from chronograph.tasks import send_auction_results
-from exceptions import SkipException
+from prozorro_auction.settings import logger
+from prozorro_auction.databridge.requests import patch_tender_auction
+from prozorro_auction.databridge.model import copy_bid_tokens, build_urls_patch
+from prozorro_auction.databridge.storage import update_auction, read_auction
+from prozorro_auction.chronograph.tasks import send_auction_results
+from prozorro_auction.exceptions import SkipException
 import pytz
 
 

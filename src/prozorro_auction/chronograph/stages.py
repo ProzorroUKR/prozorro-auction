@@ -1,10 +1,10 @@
-from settings import logger, API_HEADERS
+from prozorro_auction.settings import logger, API_HEADERS
 from datetime import datetime
-from chronograph.tasks import upload_audit_document, send_auction_results
-from chronograph.model import (
+from prozorro_auction.chronograph.tasks import upload_audit_document, send_auction_results
+from prozorro_auction.chronograph.model import (
     sort_bids, get_label_dict, get_bidder_number, update_auction_results, publish_bids_made_in_current_stage
 )
-from chronograph.requests import get_tender_documents, get_tender_bids, get_tender_public_bids
+from prozorro_auction.chronograph.requests import get_tender_documents, get_tender_bids, get_tender_public_bids
 import aiohttp
 
 

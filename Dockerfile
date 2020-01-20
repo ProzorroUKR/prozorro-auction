@@ -7,4 +7,4 @@ RUN pip install -r requirements.txt
 COPY ./src /app
 ENV API_OPT_FIELDS="status,procurementMethodType"
 ENTRYPOINT ["python", "-m"]
-CMD ["api.main"]
+CMD ["prozorro_auction.api.main"]

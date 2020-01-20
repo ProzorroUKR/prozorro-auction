@@ -1,6 +1,6 @@
 from aiohttp import web
-from settings import API_PORT, logger
-from api.views import routes
+from prozorro_auction.settings import API_PORT, logger
+from prozorro_auction.api.views import routes
 
 
 def create_application():

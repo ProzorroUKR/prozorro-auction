@@ -1,5 +1,5 @@
-from exceptions import RequestRetryException
-from settings import logger, CONNECTION_ERROR_INTERVAL, TOO_MANY_REQUESTS_INTERVAL, BASE_URL
+from prozorro_auction.exceptions import RequestRetryException
+from prozorro_auction.settings import logger, CONNECTION_ERROR_INTERVAL, TOO_MANY_REQUESTS_INTERVAL, BASE_URL
 from json.decoder import JSONDecodeError
 import aiohttp
 

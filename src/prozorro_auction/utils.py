@@ -1,5 +1,5 @@
 from datetime import datetime
-from settings import TZ
+from prozorro_auction.settings import TZ
 from iso8601 import parse_date
 from fractions import Fraction
 import pytz

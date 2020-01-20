@@ -1,7 +1,7 @@
 from copy import deepcopy
-from settings import logger, TEST_MODE, AUCTION_HOST
+from prozorro_auction.settings import logger, TEST_MODE, AUCTION_HOST
 from datetime import timedelta
-from utils import convert_datetime, get_now, calculate_coeficient, cooking
+from prozorro_auction.utils import convert_datetime, get_now, calculate_coeficient, cooking
 import uuid
 
 
