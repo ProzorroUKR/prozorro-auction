@@ -13,7 +13,7 @@ test:
   tags:
     - kube
   before_script:
-    - pip install -r requirements
+    - pip install -r requirements.txt
     - pip install -e .
     - pip install pytest pytest-asyncio coverage
   script:
