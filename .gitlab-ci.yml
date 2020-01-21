@@ -32,7 +32,7 @@ test:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
     - docker build -t $CI_REGISTRY_IMAGE:$TAG .
     - docker push $CI_REGISTRY_IMAGE:$TAG
-    - docker build -t $CI_REGISTRY_FRONTEND_IMAGE:$TAG .
+    - docker build -t $CI_REGISTRY_FRONTEND_IMAGE:$TAG ./frontend
     - docker push $CI_REGISTRY_FRONTEND_IMAGE:$TAG
 
 build latest:
