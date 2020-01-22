@@ -8,6 +8,7 @@ import asyncio
 UPDATE_CHRONOGRAPH_FIELDS = (
     "current_stage",
     "timer",
+    "chronograph_errors_count",
     "stages",
     "bids",  # to publish posted bids
     "initial_bids",

@@ -2,6 +2,7 @@ from prozorro_auction.chronograph.storage import increase_and_read_expired_timer
 from prozorro_auction.chronograph.stages import tick_auction
 from prozorro_auction.exceptions import RetryException
 from prozorro_auction.settings import logger, PROCESSING_LOCK
+from datetime import timedelta
 from time import time
 import asyncio
 import signal
@@ -21,6 +22,30 @@ def configure_signals():
     signal.signal(signal.SIGINT, stop_callback)
 
 
+async def postpone_timer_on_error(auction):
+    """
+    if an auction stage raises an exception,
+    we run retries with increased intervals
+    and finally we discard these tasks completely
+    :return:
+    """
+    data = {"_id": auction["_id"]}
+    errors_count = auction.get("chronograph_errors_count", 0)
+    errors_count += 1
+    if errors_count < 1000:
+        data.update(
+            {
+                'timer': auction["timer"] + timedelta(seconds=errors_count),
+                'chronograph_errors_count': errors_count,
+            }
+        )
+        logger.warning(f"Delaying auction processing {auction['_id']} for {errors_count} seconds")
+    else:
+        data.update(timer=None)
+        logger.critical(f"Discard auction processing {auction['_id']}")
+    await update_auction(data)
+
+
 async def chronograph_loop():
     logger.info('Starting chronograph service')
     while KEEP_RUNNING:
@@ -31,9 +56,10 @@ async def chronograph_loop():
                 await tick_auction(auction)
             except RetryException as e:
                 logger.warning(e, extra={"MESSAGE_ID": "CHRONOGRAPH_TICK_RETRY"})
+                await postpone_timer_on_error(auction)
             except Exception as ex:
-                # auction.timer = None
                 logger.exception(ex, extra={"MESSAGE_ID": "CHRONOGRAPH_TICK_EXCEPTION"})
+                await postpone_timer_on_error(auction)
             else:
                 await update_auction(auction)
 
