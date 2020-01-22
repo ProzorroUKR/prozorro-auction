@@ -63,11 +63,10 @@ async def watch_changed_docs():
                 await asyncio.sleep(MONGODB_ERROR_INTERVAL)
             else:
                 resume_after = change["_id"]
-                if "fullDocument" in change:
+                if "fullDocument" in change:   # present in insert/update changes
                     auction = {k: v
                                for k, v in change["fullDocument"].items()
                                if k in GET_FIELDS}
-                    print(auction)
                     yield auction
 
 

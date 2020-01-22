@@ -4,6 +4,7 @@ from prozorro_auction.api.utils import json_response, json_dumps
 from prozorro_auction.api.model import get_test_auction, validate_posted_bid_amount
 from prozorro_auction.databridge.model import build_stages
 from aiohttp import web
+from aiohttp import http_websocket
 from prozorro_auction.utils import get_now
 import asyncio
 
@@ -166,11 +167,14 @@ def get_auction_feed():
 
 
 async def ping_ws(ws):
-    while not ws.closed:
-        await asyncio.sleep(5)
-        await ws.send_str("PING")  # send it, so client is sure that connection is fine
-        res = await ws.receive(timeout=5)  # we do actually nothing if there is no pong
-        logger.debug(f"Ping response: {res.data}")
+    try:
+        while not ws.closed:
+            await asyncio.sleep(5)
+            await ws.send_str("PING")  # send it, so client is sure that connection is fine
+            res = await ws.receive(timeout=5)  # we do actually nothing if there is no pong
+            logger.debug(f"Ping response: {res.data}")
+    except ConnectionResetError as e:
+        logger.warning(f"ConnectionResetError at ping {e}")
 
 
 @routes.get('/api/auctions/{auction_id}/ws')
@@ -192,6 +196,8 @@ async def ws_handler(request):
         while not ws.closed:
             await feed.get()  # will get 1 from _process_changes_loop
             await ws.send_json(auction_feed.get(auction_id), dumps=json_dumps)
+    except ConnectionResetError as e:
+        logger.warning(f"ConnectionResetError at send updates {e}")
     finally:
         logger.info("Unsubscribe socket")
         auction_feed.unsubscribe(auction_id, ws)
