@@ -4,7 +4,6 @@ stages:
   - re_push
 
 variables:
-  BUILD_TAG: 'ci-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA'
   CI_REGISTRY_FRONTEND_IMAGE: '$CI_REGISTRY_IMAGE/frontend'
 
 
@@ -22,8 +21,7 @@ test:
     - coverage report
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
 
-
-build_tag_image:
+.build_tag_image:
   stage: build
   dependencies:
     - test
@@ -33,19 +31,41 @@ build_tag_image:
     - tags
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t auction-image .
-    - docker run auction-image /app/run_tests.sh
-    - docker tag auction-image $CI_REGISTRY_IMAGE:$TAG
-    - docker push $CI_REGISTRY_FRONTEND_IMAGE:$TAG
+    - docker build -t $REGISTRY_IMAGE:$CI_COMMIT_TAG $BUILD_CONTEXT
+    - docker push $REGISTRY_IMAGE:$CI_COMMIT_TAG
 
-push_latest:
+.push_latest:
   stage: re_push
-  needs:
-    - build_tag_image
   only:
     - /^[0-9]+\.[0-9]+\.[0-9]+$/
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker pull $CI_REGISTRY_IMAGE:$TAG
-    - docker tag $CI_REGISTRY_IMAGE:$TAG $CI_REGISTRY_IMAGE:latest
-    - docker push $CI_REGISTRY_FRONTEND_IMAGE:latest
+    - docker pull $REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - docker tag $REGISTRY_IMAGE:$CI_COMMIT_TAG $REGISTRY_IMAGE:latest
+    - docker push $REGISTRY_IMAGE:latest
+
+build_backend_tag_image:
+  extends: .build_tag_image
+  variables:
+    BUILD_CONTEXT: .
+    REGISTRY_IMAGE: $CI_REGISTRY_IMAGE
+
+push_backend_latest_image:
+  extends: .push_latest
+  needs:
+    - build_backend_tag_image
+  variables:
+    REGISTRY_IMAGE: $CI_REGISTRY_IMAGE
+
+build_frontend_tag_image:
+  extends: .build_tag_image
+  variables:
+    BUILD_CONTEXT: ./frontend
+    REGISTRY_IMAGE: $CI_REGISTRY_FRONTEND_IMAGE
+
+push_frontend_latest_image:
+  extends: .push_latest
+  needs:
+    - build_frontend_tag_image
+  variables:
+    REGISTRY_IMAGE: $CI_REGISTRY_FRONTEND_IMAGE
