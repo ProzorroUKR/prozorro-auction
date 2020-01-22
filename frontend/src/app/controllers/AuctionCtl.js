@@ -477,6 +477,8 @@ angular.module('auction').controller('AuctionController',[
                         $log.info({
                           message: 'Auction ends already'
                         });
+                      }else{
+                        $rootScope.start_sync();
                       }
                     }
                 }else{
@@ -484,7 +486,7 @@ angular.module('auction').controller('AuctionController',[
                 }
                 $rootScope.restart_retries = AuctionConfig.restart_retries;
                 $rootScope.document_exists = true;
-                $timeout($rootScope.get_db_document, 2000);  // sync changes
+                // $timeout($rootScope.get_db_document, 2000);  // sync changes
             },
             function(response) {
                 if (response.status == 404) {
@@ -513,11 +515,65 @@ angular.module('auction').controller('AuctionController',[
             }
         );
     };
+    $rootScope.start_sync = function(){
+        var schema = window.location.protocol === "https:" ?  "wss:": "ws:";
+        var relative_path = '/api/auctions/' + AuctionConfig.auction_doc_id + '/ws'
+        var uri = schema + "//" + window.location.host + relative_path;
+
+        // Create WebSocket connection.
+        var socket = new WebSocket(uri);
+        var heartbeat_interval = null, missed_heartbeats = 0;
+        socket.addEventListener('open', function (event) {
+            if (heartbeat_interval === null) {
+                heartbeat_interval = setInterval(function() {
+                    try {
+                        missed_heartbeats++;
+                        if (missed_heartbeats >= 3)
+                            throw new Error("Too many missed heartbeats.");
+                        socket.send("PONG");
+                    } catch(e) {
+                        clearInterval(heartbeat_interval);
+                        heartbeat_interval = null;
+                        console.warn("Closing connection. Reason: " + e.message);
+                        socket.close(1000, "Closing unhealthy connection");
+                        console.log(socket);
+                    }
+                }, 5000);
+            }
+        });
+        socket.addEventListener('message', function (event) {
+            if (event.data === "PING") {
+                missed_heartbeats = 0; // reset the counter for missed heartbeats
+                return;
+            }
+            var json = JSON.parse(event.data);
+            $rootScope.replace_document(json);
+            $rootScope.restart_retries = AuctionConfig.restart_retries;
+        });
+        socket.onerror = function (error) {
+            console.error(error);
+        };
+        socket.onclose = function () {
+            console.log("Close handler. Restart after a second");
+            $timeout(function() {
+                $rootScope.start_sync();
+            }, 1000);
+
+
+            if ($rootScope.restart_retries < 1){
+                growl.error('Synchronization failed', {ttl: 2000});
+                $log.error({message: 'Synchronization failed'});
+
+            } else if ($rootScope.restart_retries != AuctionConfig.restart_retries) {
+                growl.warning('Internet connection is lost. Attempt to restart after 1 sec', {
+                  ttl: 1000
+                });
+            }
+            $rootScope.restart_retries -= 1;
+        };
+    };
     $rootScope.check_authorization = function(on_finish){
       on_finish = on_finish || function(){};
-
-
-
 
       var start_anonymous_session = function(){
         $timeout(function(){  // doesn't work without timeout

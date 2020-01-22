@@ -17,14 +17,21 @@ UPDATE_CHRONOGRAPH_FIELDS = (
 
 async def increase_and_read_expired_timer():
     collection = get_mongodb_collection()
-    current_ts = datetime.now(tz=TZ)
-    # this is needed to guarantee that this object will not be touched by another chronograph
-    processing_lock = timedelta(seconds=PROCESSING_LOCK)
-    auction = await collection.find_one_and_update(
-        {'timer': {'$exists': True, '$lte': current_ts}},
-        {'$set': {'timer': current_ts + processing_lock}}
-    )
-    return auction
+    while True:
+        current_ts = datetime.now(tz=TZ)
+        # this is needed to guarantee that this object will not be touched by another chronograph
+        processing_lock = timedelta(seconds=PROCESSING_LOCK)
+        try:
+            auction = await collection.find_one_and_update(
+                {'timer': {'$exists': True, '$lte': current_ts}},
+                {'$set': {'timer': current_ts + processing_lock}}
+            )
+        except PyMongoError as e:
+            logger.warning(f"Read timer error {type(e)}: {e}",
+                           extra={"MESSAGE_ID": "CHRONOGRAPH_MONGODB_EXC"})
+            await asyncio.sleep(MONGODB_ERROR_INTERVAL)
+        else:
+            return auction
 
 
 async def update_auction(data):

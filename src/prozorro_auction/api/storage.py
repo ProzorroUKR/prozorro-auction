@@ -1,9 +1,9 @@
 from prozorro_auction.storage import get_mongodb_collection
-from prozorro_auction.settings import logger
+from prozorro_auction.settings import logger, MONGODB_ERROR_INTERVAL
 from pymongo import DESCENDING
 from pymongo.errors import PyMongoError
 from aiohttp import web
-
+import asyncio
 
 LIST_FIELDS = (
     "_id", "title", "title_en", "start_at", "procurementMethodType", "tenderID"
@@ -38,6 +38,37 @@ async def get_auction(auction_id, fields=GET_FIELDS):
         if not result:
             raise web.HTTPNotFound()
         return result
+
+
+async def watch_changed_docs():
+    collection = get_mongodb_collection()
+    resume_after = None
+
+    while True:
+        logger.info(f"Start watching mongodb changes after {resume_after}")
+        changes = collection.watch(full_document="updateLookup", resume_after=resume_after)
+
+        while True:
+            try:
+                change = await changes.next()
+            except PyMongoError as e:
+                logger.error(f"Got feed error {type(e)}: {e}", extra={"MESSAGE_ID": "MONGODB_EXC"})
+                await asyncio.sleep(MONGODB_ERROR_INTERVAL)
+            except StopAsyncIteration as e:
+                logger.exception(e)
+                resume_after = None
+                break
+            except Exception as e:
+                logger.exception(e)
+                await asyncio.sleep(MONGODB_ERROR_INTERVAL)
+            else:
+                resume_after = change["_id"]
+                if "fullDocument" in change:
+                    auction = {k: v
+                               for k, v in change["fullDocument"].items()
+                               if k in GET_FIELDS}
+                    print(auction)
+                    yield auction
 
 
 async def insert_auction(data):
