@@ -1,0 +1,43 @@
+@startuml
+
+actor User
+component [API ЦБД] as api_cbd
+
+cloud Auctions {
+    component [Frontend\n\
+               -serves static files\n\
+               -proxies api] as frontend
+    component [API\n\
+               -GET ping (health-check)\n\
+               -GET auction list/details\n\
+               -WebSockets auction changes\n\
+               -POST logs\n\
+               -POST check authorization \n\
+               -POST bid\n\
+               -GET bid(refresh page case)\n\
+               ] as api
+    component [Chronograph\n\
+               switches rounds and does round specific actions:\n\
+               -schedule rounds(order of bidders)\n\
+               -reveal published bids\n\
+               -sends audit files to api\n\
+               -sends results to api\
+               ] as timer
+    component [Databridge (Singleton)\n\
+               iterates over the tender feed\n\
+               puts auctions to MongoDB\n\
+               puts auction URLs to api\n\
+               ] as bridge
+    database MongoDB
+}
+
+User -right- frontend
+frontend -right- api
+api -down-> MongoDB
+bridge -up-> MongoDB
+bridge --> api_cbd
+timer --> MongoDB
+timer --> api_cbd
+
+
+@enduml
