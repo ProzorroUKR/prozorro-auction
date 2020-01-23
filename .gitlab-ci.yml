@@ -1,7 +1,6 @@
 stages:
   - test
   - build
-  - re_push
 
 variables:
   CI_REGISTRY_FRONTEND_IMAGE: '$CI_REGISTRY_IMAGE/frontend'
@@ -21,51 +20,20 @@ test:
     - coverage report
   coverage: '/TOTAL.+ ([0-9]{1,3}%)/'
 
-.build_tag_image:
+
+build:
   stage: build
   dependencies:
     - test
-  tags:
-    - shell
   only:
     - tags
+  tags:
+    - shell
   script:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker build -t $REGISTRY_IMAGE:$CI_COMMIT_TAG $BUILD_CONTEXT
-    - docker push $REGISTRY_IMAGE:$CI_COMMIT_TAG
-
-.push_latest:
-  stage: re_push
-  only:
-    - /^[0-9]+\.[0-9]+\.[0-9]+$/
-  script:
-    - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN $CI_REGISTRY
-    - docker pull $REGISTRY_IMAGE:$CI_COMMIT_TAG
-    - docker tag $REGISTRY_IMAGE:$CI_COMMIT_TAG $REGISTRY_IMAGE:latest
-    - docker push $REGISTRY_IMAGE:latest
-
-build_backend_tag_image:
-  extends: .build_tag_image
-  variables:
-    BUILD_CONTEXT: .
-    REGISTRY_IMAGE: $CI_REGISTRY_IMAGE
-
-push_backend_latest_image:
-  extends: .push_latest
-  needs:
-    - build_backend_tag_image
-  variables:
-    REGISTRY_IMAGE: $CI_REGISTRY_IMAGE
-
-build_frontend_tag_image:
-  extends: .build_tag_image
-  variables:
-    BUILD_CONTEXT: ./frontend
-    REGISTRY_IMAGE: $CI_REGISTRY_FRONTEND_IMAGE
-
-push_frontend_latest_image:
-  extends: .push_latest
-  needs:
-    - build_frontend_tag_image
-  variables:
-    REGISTRY_IMAGE: $CI_REGISTRY_FRONTEND_IMAGE
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - if [[ $CI_COMMIT_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then docker tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG $CI_REGISTRY_IMAGE:latest && docker push  $CI_REGISTRY_IMAGE:latest; fi
+    - docker build -t $CI_REGISTRY_FRONTEND_IMAGE:$CI_COMMIT_TAG ./frontend
+    - docker push $CI_REGISTRY_FRONTEND_IMAGE:$CI_COMMIT_TAG
+    - if [[ $CI_COMMIT_TAG =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then docker tag $CI_REGISTRY_FRONTEND_IMAGE:$CI_COMMIT_TAG $CI_REGISTRY_FRONTEND_IMAGE:latest && docker push  $CI_REGISTRY_FRONTEND_IMAGE:latest; fi
