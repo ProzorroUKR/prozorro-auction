@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from prozorro_crawler.main import main
+from prozorro_auction.exceptions import RequestRetryException, SkipException
 from prozorro_auction.databridge.tasks import schedule_auction
 from prozorro_auction.databridge.model import get_auctions_from_tender, get_canceled_auctions_from_tender
 from prozorro_auction.databridge.requests import get_tender_document
@@ -13,7 +14,10 @@ async def process_tender_data(session, tender):
         tasks = []
         if tender["status"] == "active.auction":
             # updating tender data with the fill private and public data
-            tender = await get_tender_document(session, tender)
+            try:
+                tender = await get_tender_document(session, tender)
+            except SkipException:
+                return   # logging should be done just before raising this exc
             # processing auctions
             for auction in get_auctions_from_tender(tender):
                 tasks.append(schedule_auction(session, auction, tender))
