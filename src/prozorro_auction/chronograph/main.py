@@ -34,16 +34,14 @@ async def postpone_timer_on_error(auction):
     errors_count += 1
     if errors_count < 1000:
         data.update(
-            {
-                'timer': auction["timer"] + timedelta(seconds=errors_count),
-                'chronograph_errors_count': errors_count,
-            }
+            timer=auction["timer"] + timedelta(seconds=errors_count),
+            chronograph_errors_count=errors_count,
         )
         logger.warning(f"Delaying auction processing {auction['_id']} for {errors_count} seconds")
     else:
         data.update(timer=None)
         logger.critical(f"Discard auction processing {auction['_id']}")
-    await update_auction(data)
+    await update_auction(data, update_date=False)
 
 
 async def chronograph_loop():

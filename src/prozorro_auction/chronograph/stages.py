@@ -1,39 +1,26 @@
 from prozorro_auction.settings import logger, API_HEADERS
 from datetime import datetime
-from prozorro_auction.chronograph.tasks import upload_audit_document, send_auction_results
+from prozorro_auction.chronograph.tasks import publish_auction_results
 from prozorro_auction.chronograph.model import (
     sort_bids, get_label_dict, get_bidder_number, update_auction_results,
     publish_bids_made_in_current_stage, copy_bid_stage_fields,
 )
-from prozorro_auction.chronograph.requests import get_tender_documents, get_tender_bids, get_tender_public_bids
+from prozorro_auction.chronograph.requests import get_tender_public_bids
 import aiohttp
 
 
 async def tick_auction(auction):
     current_stage = auction.get("current_stage", -1)
     stages = auction.get("stages")
-
     next_stage_index = current_stage + 1
     if next_stage_index >= len(stages):
         return logger.error(f"Chronograph tries to update {auction['_id']} "
                             f"to a non-existed stage {next_stage_index}")
-
     next_stage = stages[next_stage_index]
     if next_stage["start"] > datetime.now():
         return logger.error(f"Chronograph tries to update {auction['_id']} too early {next_stage['start']}")
 
-    # TODO: mb "end stage" and "start stage" methods should be proceeded distinctly
-    # run end stage method
-    if current_stage > -1:
-        this_stage = stages[current_stage]
-        end_method = globals().get(f"on_end_stage_{this_stage['type']}")
-        if end_method:
-            await end_method(auction)
-
-    # start next stage method
-    start_method = globals().get(f"on_start_stage_{next_stage['type']}")
-    if start_method:
-        await start_method(auction)
+    await run_stage_methods(auction, stages, current_stage)
 
     # update stage fields
     auction["current_stage"] = next_stage_index
@@ -42,6 +29,26 @@ async def tick_auction(auction):
         auction["timer"] = stages[next_stage]["start"]
     else:
         auction["timer"] = None
+
+
+async def run_stage_methods(auction, stages, current_stage):
+    # run end stage method
+    finished_stage = auction.get("finished_stage")
+    if current_stage > -1 and \
+       current_stage != finished_stage:  # to run "on_end" methods only once in case of any exceptions after their run
+
+        this_stage = stages[current_stage]
+        end_method = globals().get(f"on_end_stage_{this_stage['type']}")
+        if end_method:
+            await end_method(auction)
+
+        auction["finished_stage"] = current_stage
+
+    # start next stage method
+    next_stage = stages[current_stage + 1]
+    start_method = globals().get(f"on_start_stage_{next_stage['type']}")
+    if start_method:
+        await start_method(auction)
 
 
 async def on_start_stage_pause(auction):
@@ -81,18 +88,7 @@ async def on_end_stage_bids(auction):
 
 
 async def on_start_stage_pre_announcement(auction):
-    """
-    1 upload audit document
-    2 send auction results to tenders api
-    """
-    async with aiohttp.ClientSession(headers=API_HEADERS) as session:
-        # post audit document
-        tender_documents = await get_tender_documents(session, auction["tender_id"])  # public data
-        await upload_audit_document(session, auction, tender_documents)
-
-        # send results to the api
-        tender_bids = await get_tender_bids(session, auction["tender_id"])   # private data
-        await send_auction_results(session, auction, tender_bids)
+    await publish_auction_results(auction)
 
 
 async def on_start_stage_announcement(auction):

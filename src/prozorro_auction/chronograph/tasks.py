@@ -1,6 +1,27 @@
-from prozorro_auction.chronograph.requests import upload_document, publish_tender_document, post_tender_auction
-from prozorro_auction.chronograph.model import build_audit_document, build_results_bids_patch, get_doc_id_from_filename
-from prozorro_auction.settings import logger
+from prozorro_auction.chronograph.requests import (
+    upload_document, publish_tender_document, post_tender_auction,
+    get_tender_documents, get_tender_bids,
+)
+from prozorro_auction.chronograph.model import (
+    build_audit_document, build_results_bids_patch, get_doc_id_from_filename
+)
+from prozorro_auction.settings import logger, API_HEADERS
+import aiohttp
+
+
+async def publish_auction_results(auction):
+    """
+    1 upload audit document
+    2 send auction results to tenders api
+    """
+    async with aiohttp.ClientSession(headers=API_HEADERS) as session:
+        # post audit document
+        tender_documents = await get_tender_documents(session, auction["tender_id"])  # public data
+        await upload_audit_document(session, auction, tender_documents)
+
+        # send results to the api
+        tender_bids = await get_tender_bids(session, auction["tender_id"])  # private data
+        await send_auction_results(session, auction, tender_bids)
 
 
 async def upload_audit_document(session, auction, documents):

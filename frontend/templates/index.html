@@ -23,15 +23,8 @@
 {% raw %}
 <div class="container" ng-cloak>
   <div class="list-group" >
-    <div
-      class="list-group-item text-center"
-      ng-repeat="auction in auctions">
-      <a ng-if="(auction.procurementMethodType||'').indexOf('esco') >= 0" href="/esco-tenders/{{ auction._id }}">
-        <h4 class="list-group-item-heading">
-          Тендер {{ auction.tenderID }}
-        </h4>
-      </a>
-      <a ng-if="(auction.procurementMethodType||'').indexOf('esco') === -1" href="/tenders/{{ auction._id }}">
+    <div class="list-group-item text-center" ng-repeat="auction in auctions">
+      <a href="/tenders/{{ auction._id }}">
         <h4 class="list-group-item-heading">
           Тендер {{ auction.tenderID }}
         </h4>

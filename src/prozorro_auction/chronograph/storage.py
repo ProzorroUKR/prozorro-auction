@@ -7,12 +7,13 @@ import asyncio
 
 UPDATE_CHRONOGRAPH_FIELDS = (
     "current_stage",
+    "finished_stage",
     "timer",
     "chronograph_errors_count",
     "stages",
-    "bids",  # to publish posted bids
     "initial_bids",
     "results",
+    "bids",  # to publish posted bids
 )
 
 
@@ -35,10 +36,13 @@ async def increase_and_read_expired_timer():
             return auction
 
 
-async def update_auction(data):
+async def update_auction(data, update_date=True):
     collection = get_mongodb_collection()
     set_data = {k: v for k, v in data.items() if k in UPDATE_CHRONOGRAPH_FIELDS}
-    update = {"$currentDate": {"modified": True}}
+    update = {}
+
+    if update_date:
+        update["$currentDate"] = {"modified": True}
 
     if "timer" in set_data and set_data["timer"] is None:
         del set_data["timer"]
@@ -46,6 +50,10 @@ async def update_auction(data):
 
     if set_data:
         update["$set"] = set_data
+
+    if not update:
+        logger.critical(f"There is nothing to update: {data}")
+        return
 
     retries = 0
     while True:
