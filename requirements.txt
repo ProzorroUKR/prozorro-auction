@@ -5,3 +5,5 @@ iso8601>=0.1.12<1
 pytz
 pyyaml
 git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.0.8
+git+git://github.com/ProzorroUKR/esculator.git@0.0.2
+git+git://github.com/ProzorroUKR/barbecue.git@0.2

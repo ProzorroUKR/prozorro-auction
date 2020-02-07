@@ -1,5 +1,5 @@
 angular.module('auction').filter('fraction', [function () {
-  return function(val, coeficient) {
+  return function(val, coeficient, esco) {
     var format_function = function(val) {
       return math.format(Number(val), {
         notation: 'fixed',
@@ -10,8 +10,13 @@ angular.module('auction').filter('fraction', [function () {
       if (angular.isNumber(val)){
         return format_function(val);
       }
-      if (coeficient) {
-        return format_function(math.eval(math.format(math.fraction(val) * math.fraction(coeficient))).toFixed(2));
+      if (coeficient) {  // TODO move somewhere, this is business logic not a part of formatting
+        if (esco){  // I don't know why..
+          var result = math.fraction(val) / math.fraction(coeficient);
+        }else{
+          result = math.fraction(val) * math.fraction(coeficient)
+        }
+        return format_function(math.eval(math.format(result)).toFixed(2));
       }
       return format_function(math.eval(math.format(math.fraction(val))).toFixed(2));
     }

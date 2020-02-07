@@ -1,10 +1,12 @@
 from prozorro_auction.settings import logger
-from prozorro_auction.api.storage import read_auction_list, get_auction, insert_auction, update_auction_bid_stage, watch_changed_docs
+from prozorro_auction.api.storage import (
+    read_auction_list, get_auction, insert_auction,
+    update_auction_bid_stage, watch_changed_docs,
+)
 from prozorro_auction.api.utils import json_response, json_dumps
-from prozorro_auction.api.model import get_test_auction, validate_posted_bid_amount
+from prozorro_auction.api.model import get_test_auction, get_posted_bid, get_bid_response_data, get_bid_by_bidder_id
 from prozorro_auction.databridge.model import build_stages
 from aiohttp import web
-from aiohttp import http_websocket
 from prozorro_auction.utils import get_now
 import asyncio
 
@@ -52,18 +54,44 @@ async def auction_log(request):
 async def post_bid(request):
     _id = request.match_info["auction_id"]
     bidder_id = request.match_info["bidder_id"]
+    client_id = request.cookies.get("client_id")
     hash_value = request.rel_url.query.get("hash")
     data = await request.json()
+    auction = await get_auction(
+        _id,
+        fields=(
+            "bids", "stages", "current_stage", "features", "minimalStep", "procurementMethodType",
+            "fundingKind", "yearlyPaymentsPercentageRange", "NBUdiscountRate",
+            "noticePublicationDate", "minimalStepPercentage",
+        )
+    )
+    bid = get_bid_by_bidder_id(auction, bidder_id)
 
-    auction = await get_auction(_id, fields=("bids", "stages", "current_stage", "features", "minimalStep"))
+    posted_bid = get_posted_bid(auction, bid, hash_value, data)
+    auction = await update_auction_bid_stage(_id, bidder_id, auction["current_stage"], posted_bid)
+    bid = get_bid_by_bidder_id(auction, bidder_id)
+    # updated "auction" value is important to build response using "get_bid_response_data" (at least for esco)
 
-    amount = validate_posted_bid_amount(auction, bidder_id, hash_value, data)
-    stage_value = "" if amount == -1 else dict(amount=amount, time=get_now())
+    if auction["procurementMethodType"] == "esco":
+        if posted_bid:
+            log_msg = (f"Bidder {bidder_id} with client_id {client_id} placed bid "
+                       f"with total amount {posted_bid['amountPerformance']}, "
+                       f"yearly payments percentage = {posted_bid['yearlyPaymentsPercentage']}, "
+                       f"contract duraction years = {posted_bid['contractDuration']['years']}, "
+                       f"contract duration days = {posted_bid['contractDuration']['days']} "
+                       f"in {get_now().isoformat()}")  # "let me speak from my heart"
+        else:
+            log_msg = f"Bidder {bidder_id} with client_id {client_id} canceled bids " \
+                f"in stage {auction['current_stage']} in {get_now().isoformat()}"
+    else:
+        if posted_bid:
+            log_msg = f"Bidder {bidder_id} posted bid: {posted_bid['amount']}"
+        else:
+            log_msg = f"Bidder {bidder_id} cancelled their bid"
+    logger.info(log_msg)
 
-    await update_auction_bid_stage(_id, bidder_id, auction["current_stage"], stage_value)
-
-    logger.info(f"Bidder {bidder_id} posted bid: {amount}")
-    return json_response({"amount": amount}, status=200)
+    resp_data = get_bid_response_data(auction, bid)
+    return json_response(resp_data, status=200)
 
 
 @routes.post('/api/auctions/{auction_id}/check_authorization')
@@ -74,28 +102,18 @@ async def check_authorization(request):
         client_id = data.get("client_id")
 
         _id = request.match_info["auction_id"]
-        auction = await get_auction(_id, fields=("bids", "stages", "current_stage"))
+        auction = await get_auction(_id, fields=("bids", "stages", "current_stage", "procurementMethodType"))
 
-        for bid in auction["bids"]:
-            if bid["id"] == bidder_id:
-                if bid["hash"] != token:
-                    raise web.HTTPUnauthorized(text="hash is invalid")
+        bid = get_bid_by_bidder_id(auction, bidder_id)
+        if bid["hash"] != token:
+            raise web.HTTPUnauthorized(text="hash is invalid")
 
-                # get bids saved amount on this stage
-                amount = None
-                current_stage = auction.get("current_stage", 0)
-                auction_stage = auction["stages"][current_stage]
-                if auction_stage["type"] == "bids" and auction_stage["bidder_id"] == bidder_id:
-                    amount = bid.get("stages", {}).get(str(current_stage), {}).get("amount")
+        resp_data = get_bid_response_data(auction, bid)
+        logger.info(f"Bidder {bidder_id} from {client_id} has passed check authorization: {resp_data}")
 
-                resp_data = {"amount": amount}
-                logger.info(f"Bidder {bidder_id} from {client_id} has passed check authorization: {amount}")
-
-                if "coeficient" in bid:
-                    resp_data["coeficient"] = str(bid["coeficient"])
-                return json_response(resp_data, status=200)
-        else:
-            raise web.HTTPUnauthorized(text="Bidder not found")
+        if "coeficient" in bid:
+            resp_data["coeficient"] = str(bid["coeficient"])
+        return json_response(resp_data, status=200)
     else:
         raise web.HTTPUnauthorized(text="bidder_id or hash not provided")
 

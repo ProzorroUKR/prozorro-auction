@@ -88,7 +88,28 @@ angular.module('auction').config(
     'Please use the correct link to view the auction.': 'Please use the correct link to view the auction.',
     'Auction has not started and will be rescheduled': 'Auction has not started and will be rescheduled',
     'Please wait for the auction start.': 'Please wait for the auction start.',
-    'You are going to decrease your bid by {{too_low_bid_ratio}}%. Are you sure?': 'You are going to decrease your bid by {{too_low_bid_ratio}}%. Are you sure?'
+    'You are going to decrease your bid by {{too_low_bid_ratio}}%. Are you sure?': 'You are going to decrease your bid by {{too_low_bid_ratio}}%. Are you sure?',
+    'Contract Duration Years': 'Contract duration years',
+    'Contract Duration Days': 'Contract duration days',
+    'Percentage savings': 'Percentage savings',
+    'Yearly Payments': 'Yearly payments',
+    'or higher': 'or higher',
+    'maximum': 'maximum',
+    'Step augmentation of Bid': 'Step augmentation of Bid',
+    'Contract duration': 'Contract duration',
+    'Years': 'Years',
+    'Days': 'Days',
+    'Current EIESC': 'Current EIESC:',
+    'Percentage value must be between 0 and 100': 'Percentage value must be between 0 and 100',
+    'Maximun contract duration is 15 years': 'Maximun contract duration is 15 years',
+    'Amount NPV: Too low value': 'Amount EIESC: Too low value',
+    'No bidder id': 'No bidder id',
+    'Provide yearlyPaymentsPercentage': 'Provide yearlyPaymentsPercentage',
+    'You can\'t bid 0 days and 0 years': 'You can\'t bid 0 days and 0 years',
+    'savings': 'savings',
+    'Normilized EIESC': 'Normilized EIESC:',
+    'Current energy efficiency value of energy service contract': 'Current energy efficiency value of energy service contract',
+    'Calculated energy efficiency value of energy service contract': 'Calculated energy efficiency value of energy service contract'
   });
 
   $translateProvider.translations('uk', {
@@ -178,7 +199,28 @@ angular.module('auction').config(
     'Auction has not started and will be rescheduled': 'Аукціон не розпочався і буде перепланований',
     'Please wait for the auction start.': 'Будь ласка, дочекайтесь початку аукціону.',
     'You are going to decrease your bid by {{too_low_bid_ratio}}%. Are you sure?': 'Ви збираєтеся значно понизити свою ставку на {{too_low_bid_ratio}}%. Ви впевнені?',
-    "Your post bid request still hasn't succeed. Check (or change) your internet connection, browser or device.": "Ваш запит ставки досі не доставлено. Перевірте (або змініть) ваше інтернет-з'єднання, браузер або пристрій."
+    "Your post bid request still hasn't succeed. Check (or change) your internet connection, browser or device.": "Ваш запит ставки досі не доставлено. Перевірте (або змініть) ваше інтернет-з'єднання, браузер або пристрій.",
+    'Contract Duration Years': 'Тривалість контракту в роках',
+    'Contract Duration Days': 'Тривалість контракту в днях',
+    'Percentage savings': 'Відсоток економії',
+    'Yearly Payments': 'Річні платежі',
+    'or higher': 'або більше',
+    'maximum': 'максимум',
+    'Step augmentation of Bid': 'Крок збільшення торгів',
+    'Contract duration': 'Тривалість контракту',
+    'Years': 'Років',
+    'Days': 'Днів',
+    'Current EIESC': 'Поточний ПЕД:',
+    'Percentage value must be between 0 and 100': 'Відсоткове значення має бути від 0 до 100',
+    'Maximun contract duration is 15 years': 'Максимальна тривалість контракту становить 15 років',
+    'Amount NPV: Too low value': 'Сума ПЕД: Занадто низьке значення',
+    'No bidder id': 'Не знайдено id учасника',
+    'Provide yearlyPaymentsPercentage': 'Надайте річний відсоток платежів',
+    'You can\'t bid 0 days and 0 years': 'Ви не можете встановити 0 днів та 0 років',
+    'savings': 'економії',
+    'Normilized EIESC': 'Приведений ПЕД:',
+    'Current energy efficiency value of energy service contract': 'Поточний показник енергоефективності енергосервісного договору',
+    'Calculated energy efficiency value of energy service contract': 'Приведений показник енергоефективності енергосервісного договору'
   });
 
 
@@ -269,6 +311,27 @@ angular.module('auction').config(
     'Auction has not started and will be rescheduled': 'Аукцион не начался и будет перепланирован',
     'Please wait for the auction start.': 'Пожалуйста, дождитесь начала аукциона.',
     'You are going to decrease your bid by {{too_low_bid_ratio}}%. Are you sure?': 'Вы собираетесь значительно снизить свою ставку на {{too_low_bid_ratio}}%. Вы уверены?',
-    "Your post bid request still hasn't succeed. Check (or change) your internet connection, browser or device.": "Ваш запрос ставки всё ещё не был доставлен. Проверьте (или измените) ваше интернет-подкючение, браузер или устройство."
+    "Your post bid request still hasn't succeed. Check (or change) your internet connection, browser or device.": "Ваш запрос ставки всё ещё не был доставлен. Проверьте (или измените) ваше интернет-подкючение, браузер или устройство.",
+    'Contract Duration Years': 'Длительность контракта в годах',
+    'Contract Duration Days': 'Длительность контракта в днях',
+    'Percentage savings': 'Процент экономии',
+    'Yearly Payments': 'Ежегодные платежи',
+    'or higher': 'или больше',
+    'maximum': 'максимум',
+    'Step augmentation of Bid': 'Шаг увеличение торгов',
+    'Contract duration': 'Продолжительность контракта',
+    'Years': 'Лет',
+    'Days': 'Дней',
+    'Current EIESC': 'Текущий ПЕД:',
+    'Percentage value must be between 0 and 100': 'Процентное значение должно быть от 0 до 100',
+    'Maximun contract duration is 15 years': 'Максимальная продолжительность контракта составляет 15 лет',
+    'Amount NPV: Too low value': 'Сумма ПЕД: Слишком низкое значение',
+    'No bidder id': 'Не найдено id участника',
+    'Provide yearlyPaymentsPercentage': 'Предоставьте годовой процент платежей',
+    'You can\'t bid 0 days and 0 years': 'Вы не имеете возможности установить 0 дней и 0 лет',
+    'savings': 'экономии',
+    'Normilized EIESC': 'Приведенный ПЕД:',
+    'Current energy efficiency value of energy service contract': 'Текущий показатель энергоэффективности энергосервисного договора',
+    'Calculated energy efficiency value of energy service contract': 'Рассчитанный показатель энергоэффективности энергосервисного договора'
   });
 });

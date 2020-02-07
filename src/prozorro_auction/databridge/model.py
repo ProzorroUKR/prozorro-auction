@@ -1,7 +1,9 @@
 from copy import deepcopy
 from prozorro_auction.settings import logger, TEST_MODE, AUCTION_HOST
 from datetime import timedelta
-from prozorro_auction.utils import convert_datetime, get_now, calculate_coeficient, cooking
+from prozorro_auction.utils import convert_datetime, get_now
+from barbecue import cooking, calculate_coeficient
+from fractions import Fraction
 import uuid
 
 
@@ -28,22 +30,23 @@ def get_data_from_tender(tender):
         if b.get("status", "active") == "active"   # belowThreshold doesn't return "status" fields for auction role
     ]
     tender_auction = dict(
+        tender_id=tender.get("id"),
         mode=TEST_MODE and tender.get("submissionMethodDetails"),
         is_cancelled=tender.get("status") in ("cancelled", "unsuccessful"),
-        tender_id=tender.get("id"),
-        title=tender.get("title"),
-        title_en=tender.get("title_en"),
-        description=tender.get("description"),
-        description_en=tender.get("description_en"),
-        tenderID=tender.get("tenderID", ""),
-        procurementMethodType=tender.get("procurementMethodType"),
-        procuringEntity=tender.get("procuringEntity"),
-        minimalStep=tender.get("minimalStep"),
-        value=tender.get("value"),
         items=items,
         features=features,
         auction_type="meat" if features else "default",
     )
+
+    copy_fields = (
+        "tenderID", "title", "title_en", "description", "description_en",
+        "procurementMethodType", "procuringEntity", "minimalStep", "value",
+        "NBUdiscountRate", "noticePublicationDate", "minimalStepPercentage", "minValue",
+        "fundingKind", "yearlyPaymentsPercentageRange",
+    )
+    for f in copy_fields:
+        if f in tender:
+            tender_auction[f] = tender[f]
 
     if "lots" in tender:
         for lot in tender["lots"]:
@@ -67,10 +70,14 @@ def get_data_from_tender(tender):
                 auction["bids"] = []
                 for b in active_bids:
                     for lot_bid in b["lotValues"]:
-                        if lot_bid['relatedLot'] == lot["id"] and lot_bid.get('status', 'active') == 'active':
-                            parameters = [i for i in b.get("parameters", "") if i['code'] in codes]
-                            bid_data = get_bid_from_bid_data(b, lot_bid, features, parameters)
+                        if lot_bid["relatedLot"] == lot["id"] and lot_bid.get("status", "active") == "active":
+                            parameters = [i for i in b.get("parameters", "") if i["code"] in codes]
+                            bid_data = import_bid(b, lot_bid, features, parameters)
                             auction["bids"].append(bid_data)
+
+                if tender["procurementMethodType"] == "esco":
+                    auction["minValue"] = lot["value"]
+
                 yield auction
     else:
         tender_auction["start_at"] = tender.get("auctionPeriod", {}).get("startDate")
@@ -79,25 +86,29 @@ def get_data_from_tender(tender):
             tender_auction["lot_id"] = None
             tender_auction["bids"] = []
             for bid in active_bids:
-                bid_data = get_bid_from_bid_data(bid, bid, features, bid.get("parameters"))
+                bid_data = import_bid(bid, bid, features, bid.get("parameters"))
                 tender_auction["bids"].append(bid_data)
             yield tender_auction
 
 
-def get_bid_from_bid_data(bid, lot_bid, features, parameters):
+def import_bid(bid, lot_bid, features, parameters):
     bid_data = dict(
-        id=bid['id'],
+        id=bid["id"],
         hash=uuid.uuid4().hex,
-        name=bid['tenderers'][0]['name'] if "tenderers" in bid else None,
-        date=lot_bid['date'],
-        value=lot_bid['value'],
+        name=bid["tenderers"][0]["name"] if "tenderers" in bid else None,
+        date=lot_bid["date"],
+        value=lot_bid["value"],
     )
     if parameters:
         bid_data["parameters"] = parameters
-        bid_data["coeficient"] = str(
-            calculate_coeficient(features, parameters)
-        )
-        bid_data["amount_features"] = str(cooking(bid["value"]["amount"], features, parameters))
+        bid_data["coeficient"] = str(calculate_coeficient(features, parameters))
+        if "amountPerformance" in bid["value"]:  # esco
+            amount = str(Fraction(bid["value"]["amountPerformance"]))
+            reverse = True
+        else:
+            amount = bid["value"]["amount"]
+            reverse = False
+        bid_data["amount_features"] = str(cooking(amount, features, parameters, reverse=reverse))
     return bid_data
 
 

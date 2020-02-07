@@ -66,7 +66,7 @@ async def chronograph_loop():
                 processing_time = time() - _start_time
                 if processing_time >= PROCESSING_LOCK:
                     message = (
-                        f"Auction {auction['_id']} processing time equals to {processing_time} seconds"
+                        f"Auction {auction['_id']} processing time equals to {processing_time} seconds "
                         f"and is bigger than processing lock time - {PROCESSING_LOCK} seconds."
                         "This may lead to inconsistency of data!"
                     )

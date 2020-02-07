@@ -35,7 +35,7 @@
                             </span>
                             <span class="label-price full-price" >
                                 <span class="price-type" translate>Full Price</span>
-                                {{ bid_info['amount_features']|fraction:bidder_coeficient }}
+                                {{ bid_info['amount_features']|fraction:bidder_coeficient:is_esco }}
                                 <span class="amount-currency" ng-if="!angular.isUndefined(bid_info['amount_features'])">{{ auction_doc.minimalStep.currency|translate }}</span>
                             </span>
                         </span>
@@ -60,7 +60,7 @@
                             </span>
                         </span>
 
-                        <span class="label-minimum" ng-if="((bid_info.amount_features||bid_info.amount) == (minimal_bid.amount_features||minimal_bid.amount)) && bid_info.time == minimal_bid.time" translate>minimum</span>
+                        <span class="label-minimum" ng-if="((bid_info.amount_features||bid_info.amount) == (minimal_bid.amount_features||minimal_bid.amount)) && bid_info.time == minimal_bid.time">{{ procurement_criteria|translate }}</span>
                     </span>
                 </div>
             </div>

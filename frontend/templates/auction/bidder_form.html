@@ -1,6 +1,6 @@
 {% raw %}
 <div class="container-fluid">
-    <div ng-show="view_bids_form" class="panel panel-default bg-warning fixed-bottom" ng-class="{'auction-with-one-price': (auction_doc.auction_type||'default') == 'default'}">
+    <div ng-if="!is_esco" ng-show="view_bids_form" class="default-bids-form panel panel-default bg-warning fixed-bottom" ng-class="{'auction-with-one-price': (auction_doc.auction_type||'default') == 'default'}">
         <div class="panel-body bg-warning">
             <div class="row">
                 <div class="col-xs-12">
@@ -47,5 +47,78 @@
             </div>
         </div>
     </div>
+
+    <div ng-if="is_esco" ng-show="view_bids_form" class="bids-form panel panel-default bg-warning fixed-bottom" ng-class="{'auction-with-one-price': (auction_doc.auction_type||'default') == 'default'}">
+        <div class="panel-body bg-warning">
+             <div class="container">
+                    <div uib-alert ng-repeat="alert in alerts" type="{{alert.type}}" ng-class="'alert-' + (alert.type || 'warning')" class="bids-form-alert" close="closeAlert(alert.msg_id)"><span class="bids-form-alert-msg">{{ alert.msg | translate }}</span></div>
+                    <form id="BidsForm" name="form.BidsForm" role="form">
+                        <div class="row">
+                            <div class="col-md-8 col-sm-8 col-xs-12">
+                                <h3>{{ 'Your proposal' | translate}}:</h3>
+                                <span class="bids-form-info small">
+                                    <span class="bid-info-block">
+                                        <span ng-init="max_bid_amount()" class="bid-info-value">
+                                            <span id="max_bid_amount_price">{{ calculated_max_bid_amount|fraction }}</span> {{'or higher'|translate}}<span ng-if="auction_doc.auction_type == 'meat'">;</span>
+                                        </span>
+                                    </span>
+                                    <span class="bid-info-block" ng-if="auction_doc.auction_type == 'meat'">
+                                        <abbr title="{{ 'Current energy efficiency value of energy service contract' | translate }}">{{ 'Current EIESC' | translate }}</abbr> <span id="current-npv">{{ current_npv | fraction }}</span>;
+                                    </span>
+                                    <span ng-if="auction_doc.auction_type == 'meat'">
+                                        {{ 'Bidder Coeficient' | translate }}
+                                        <span id="bid-amount-description" ng-if="bidder_coeficient && !$root.normilized" uib-tooltip="x {{bidder_coeficient| fraction_string}}" tooltip-trigger="focus">
+                                            {{bidder_coeficient| fraction}}
+                                        </span>
+                                    </span>
+                                </span>
+                                <div class="row form-inline">
+                                    <h4 class="col-md-8 col-xs-8 col-sm-8 xs-max-hidden bids-form-header-label" translate>Contract duration</h4>
+                                    <h4 class="col-md-4 col-xs-4 col-sm-4 xs-max-hidden bids-form-header-label" translate>Yearly Payments</h4>
+                                    <div class="input-cd-years col-md-4 col-sm-4 col-xs-4">
+                                        <label class="xs-min-hidden" for="contractDurationYears" translate>Contract Duration Years</label>
+                                        <input id="contractDurationYears" class="form-control" type="number" step="1" ng-disabled="!allow_bidding" ng-model="$root.form.contractDurationYears" ng-change="calculate_current_npv(); calculate_full_price_temp()" name="contractDurationYears" min="0" max="15" required>
+                                        <label for="contractDurationYears" class="small xs-max-hidden" translate>Years</label>
+                                    </div>
+                                    <div class="col-md-4 col-sm-4 col-xs-4">
+                                        <label class="xs-min-hidden" for="contractDurationDays" translate>Contract Duration Days</label>
+                                        <input id="contractDurationDays" type="number" step="1" ng-disabled="!allow_bidding" class="form-control" ng-model="$root.form.contractDurationDays" ng-change="calculate_current_npv(); calculate_full_price_temp()" name="contractDurationDays" min="0" max="364">
+                                        <label for="contractDurationDays" class="small xs-max-hidden" translate>Days</label>
+                                    </div>
+                                    <div class="input-yearly-procents col-md-4 col-sm-4 col-xs-4">
+                                        <label class="xs-min-hidden" for="yearlyPaymentsPercentage" translate>Percentage savings</label>
+                                        <input id="yearlyPaymentsPercentage"  type="number" step="0.001" ng-disabled="!allow_bidding" class="form-control" ng-model="$root.form.yearlyPaymentsPercentage" name="yearlyPaymentsPercentage" ng-change="calculate_current_npv(); calculate_full_price_temp()" min="0" max="100" required>
+                                        <label for="yearlyPaymentsPercentage" class="small xs-max-hidden">% {{ 'savings' | translate }}</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 col-sm-4 col-xs-12 pull-right text-right">
+                                <p class="bids-form-amount">
+                                    <span ng-if="auction_doc.auction_type == 'default'"><abbr title="{{ 'Current energy efficiency value of energy service contract' | translate }}">{{ 'Current EIESC' | translate }}</abbr> <b id="current-npv">{{ current_npv | fraction }}</b></span>
+                                    <span ng-if="auction_doc.auction_type == 'meat'">
+                                        <span class="amount-header">
+                                            <abbr title="{{ 'Calculated energy efficiency value of energy service contract' | translate }}">{{'Normilized EIESC'|translate}}</abbr>
+                                            <span ng-init="max_bid_amount()" class="small">
+                                                ({{ calculated_max_bid_amount * bidder_coeficient|fraction }} {{'or higher'|translate}})
+                                            </span>
+                                        </span>
+                                        <b ng-bind="$root.form.full_price| fraction">
+                                            {{ $root.form.full_price }}
+                                        </b>
+                                    </span>
+                                </p>
+                                <div class="button-wrapper">
+                                    <button id="place-bid-button" type="submit" ng-if="allow_bidding" ng-click="post_bid()" class="btn btn-success" ng-class="{'active': form.active}" translate>Place a bid</button>
+                                    <button id="edit-bid-button" type="submit" ng-if="!allow_bidding" ng-click="edit_bid()" class="btn btn-link" translate>Edit</button>
+                                    <button id="cancel-bid-button" type="submit" ng-if="!allow_bidding" ng-click="post_bid(0, 0, -1)" class="btn btn-danger" ng-class="{'active': form.active}" translate>Cancel Bid</button>
+                                    <button id="clear-bid-button" type="submit" ng-if="allow_bidding" ng-click="($root.form.yearlyPaymentsPercentage = '');($root.form.contractDurationDays = '');($root.form.contractDurationYears = '');($root.form.bid_temp = null);($root.form.bid = null);($root.current_npv = null);calculate_full_price_temp();($root.form.full_price = null)" class="btn" translate>Clear</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+        </div>
+    </div>
+
 </div>
 {% endraw %}

@@ -135,6 +135,9 @@ angular.module('auction').controller('AuctionController',[
         $log.info({message: "Allow view bid form"});
         $rootScope.max_bid_amount();
         $rootScope.view_bids_form = true;
+        if($rootScope.is_esco){ // TypeError: Cannot read property '$valid' of undefined
+            $timeout(function(){$rootScope.calculate_current_npv();}, 100);
+        }
       }else{
         $rootScope.view_bids_form = false;
       }
@@ -247,36 +250,74 @@ angular.module('auction').controller('AuctionController',[
             return true;
         }
     };
-    $rootScope.post_bid = function(bid) {
+
+    // esco TODO check if it's used somewhere
+    $rootScope.calculate_yearly_payments = function(annual_costs_reduction, yearlyPaymentsPercentage) {
+      return math.fraction(annual_costs_reduction) * math.fraction(yearlyPaymentsPercentage);
+    };
+    $rootScope.calculate_current_npv = function() {
+      contractDurationYears = $rootScope.form.contractDurationYears || 0;
+      contractDurationDays = $rootScope.form.contractDurationDays || 0;
+      yearlyPaymentsPercentage = $rootScope.form.yearlyPaymentsPercentage || 0;
+      if ($rootScope.form.BidsForm.$valid) {
+        $rootScope.current_npv = AuctionUtils.npv(
+          parseInt(contractDurationYears.toFixed()),
+          parseInt(contractDurationDays.toFixed()),
+          parseFloat((yearlyPaymentsPercentage / 100).toFixed(5)),
+          $rootScope.get_annual_costs_reduction($rootScope.bidder_id),
+          $rootScope.auction_doc.noticePublicationDate,
+          $rootScope.auction_doc.NBUdiscountRate
+        );
+      } else {
+        $rootScope.current_npv = 0;
+      }
+    };
+    // -- esco
+
+    $rootScope.post_bid = function(firstArg, secondArgs, thirdArg) {
+      if ($rootScope.is_esco){
+        var contractDurationYears = firstArg || $rootScope.form.contractDurationYears || 0;
+        var contractDurationDays = secondArgs || $rootScope.form.contractDurationDays || 0;
+        var yearlyPaymentsPercentage = thirdArg || $rootScope.form.yearlyPaymentsPercentage || 0;
+        var bid_data = {
+          contractDuration: parseInt(contractDurationYears.toFixed()),
+          contractDurationDays: parseInt(contractDurationDays.toFixed()),
+          yearlyPaymentsPercentage: yearlyPaymentsPercentage === -1 ? yearlyPaymentsPercentage : parseFloat((yearlyPaymentsPercentage / 100).toFixed(5))
+        };
+      }else{
+        bid_data = {amount: parseFloat(firstArg) || parseFloat($rootScope.form.bid) || 0};
+      }
       $log.info({
         message: "Start post bid",
-        bid_data: parseFloat(bid) || parseFloat($rootScope.form.bid) || 0
+        bid_data: bid_data
       });
 
-      if (parseFloat($rootScope.form.bid) == -1) {
-        var msg_id = Math.random();
-        $rootScope.alerts.push({
-          msg_id: msg_id,
-          type: 'danger',
-          msg: 'To low value'
-        });
-        $rootScope.auto_close_alert(msg_id);
-        return 0;
-      }
       if ($rootScope.form.BidsForm.$valid) {
         $rootScope.alerts = [];
-        var bid_amount = parseFloat(bid) || parseFloat($rootScope.form.bid) || 0;
-        if ($rootScope.prevent_sending_too_low_bid(bid_amount)){
-            return 0;
+        if ($rootScope.is_esco){
+            var bid_amount = AuctionUtils.npv(
+              parseInt(contractDurationYears.toFixed()),
+              parseInt(contractDurationDays.toFixed()),
+              parseFloat(yearlyPaymentsPercentage.toFixed(3)),
+              $rootScope.get_annual_costs_reduction($rootScope.bidder_id),
+              $rootScope.auction_doc.noticePublicationDate,
+              $rootScope.auction_doc.NBUdiscountRate
+            );
+            var is_cancellation = yearlyPaymentsPercentage == -1;
+        }else{
+            bid_amount = bid_data.amount;
+            if ($rootScope.prevent_sending_too_low_bid(bid_amount)){
+                return 0;
+            }
+            is_cancellation = bid_data.amount === -1
         }
         if (bid_amount == $rootScope.minimal_bid.amount) {
-          var msg_id = Math.random();
           $rootScope.alerts.push({
-            msg_id: msg_id,
+            msg_id: Math.random(),
             type: 'warning',
             msg: 'The proposal you have submitted coincides with a proposal of the other participant. His proposal will be considered first, since it has been submitted earlier.'
           });
-        }
+        };
         $rootScope.form.active = true;
         $timeout(function() {
           $rootScope.form.active = false;
@@ -289,9 +330,7 @@ angular.module('auction').controller('AuctionController',[
         $http.post(
             "/api/auctions/" + AuctionConfig.auction_doc_id + "/bids/" +  ($rootScope.bidder_id || bidder_id) +
             "?hash=" + $rootScope.query_params.hash,
-            {
-               'amount': parseFloat(bid) || parseFloat($rootScope.form.bid) || 0,
-            }
+            bid_data
         ).then(function(success) {
             $rootScope.remove_failed_request_warning();
             if ($rootScope.post_bid_timeout){
@@ -300,9 +339,8 @@ angular.module('auction').controller('AuctionController',[
             }
             $rootScope.form.active = false;
 
-            var bid = success.data.amount;
             var msg_id = Math.random();
-            if (bid == -1) {
+            if (is_cancellation) {
                 $rootScope.alerts = [];
                 $rootScope.allow_bidding = true;
                 $log.info({
@@ -316,12 +354,27 @@ angular.module('auction').controller('AuctionController',[
                 $log.info({
                     message: "Handle cancel bid response on post bid"
                 });
-                $rootScope.form.bid = "";
-                $rootScope.form.full_price = '';
+                if ($rootScope.is_esco){
+                  var npv = AuctionUtils.npv(
+                      success.data.contractDurationYears,
+                      success.data.contractDurationDays,
+                      success.data.yearlyPaymentsPercentage,
+                      $rootScope.get_annual_costs_reduction($rootScope.bidder_id),
+                      $rootScope.auction_doc.noticePublicationDate,
+                      $rootScope.auction_doc.NBUdiscountRate
+                  );
+                  $rootScope.current_npv = npv;
+                  $rootScope.form.contractDurationYears = success.data.contractDurationYears;
+                  $rootScope.form.contractDurationDays = success.data.contractDurationDays;
+                  $rootScope.form.yearlyPaymentsPercentage = success.data.yearlyPaymentsPercentage * 100;
+                }else{
+                  $rootScope.form.bid = "";
+                  $rootScope.form.full_price = '';
+                }
             } else {
                 $log.info({
                     message: "Handle success response on post bid",
-                    bid_data: bid
+                    bid_data: bid_data
                 });
                 $rootScope.alerts.push({
                     msg_id: msg_id,
@@ -343,7 +396,6 @@ angular.module('auction').controller('AuctionController',[
             }
             if (error.status == 400){
                 $rootScope.remove_failed_request_warning();
-                console.log(error.data);
                 var msg_id = Math.random();
                 $rootScope.alerts.push({
                   msg_id: msg_id,
@@ -385,9 +437,21 @@ angular.module('auction').controller('AuctionController',[
         var current_stage_obj = $rootScope.auction_doc.stages[$rootScope.auction_doc.current_stage] || null;
         if ((angular.isObject(current_stage_obj)) && (current_stage_obj.amount || current_stage_obj.amount_features)) {
           if ($rootScope.bidder_coeficient && ($rootScope.auction_doc.auction_type || "default" == "meat")) {
-            amount = math.fraction(current_stage_obj.amount_features) * $rootScope.bidder_coeficient - math.fraction($rootScope.auction_doc.minimalStep.amount);
+
+            if ($rootScope.is_esco){
+              amount = math.fraction(current_stage_obj.amount_features) * (
+               $rootScope.bidder_coeficient + math.fraction($rootScope.auction_doc.minimalStepPercentage)
+              );
+            }else{
+              amount = math.fraction(current_stage_obj.amount_features) * $rootScope.bidder_coeficient - math.fraction($rootScope.auction_doc.minimalStep.amount);
+            }
+
           } else {
-            amount = math.fraction(current_stage_obj.amount) - math.fraction($rootScope.auction_doc.minimalStep.amount);
+            if ($rootScope.is_esco){
+              amount = math.fraction(current_stage_obj.amount) * (1 + math.fraction($rootScope.auction_doc.minimalStepPercentage));
+            }else{
+              amount = math.fraction(current_stage_obj.amount) - math.fraction($rootScope.auction_doc.minimalStep.amount);
+            }
           }
         }
       };
@@ -401,33 +465,40 @@ angular.module('auction').controller('AuctionController',[
     $rootScope.calculate_minimal_bid_amount = function() {
       if ((angular.isObject($rootScope.auction_doc)) && (angular.isArray($rootScope.auction_doc.stages)) && (angular.isArray($rootScope.auction_doc.initial_bids))) {
         var bids = [];
-        var filter_func;
-        if ($rootScope.auction_doc.auction_type == 'meat') {
-          filter_func = function(item, index) {
-            if (!angular.isUndefined(item.amount_features)) {
+        var sort_by = $rootScope.auction_doc.auction_type == 'meat' ? 'amount_features' : 'amount';
+        var filter_func = function(item, index) {
+            if (!angular.isUndefined(item[sort_by])) {
               bids.push(item);
             }
-          };
-        } else {
-          filter_func = function(item, index) {
-            if (!angular.isUndefined(item.amount)) {
-              bids.push(item);
-            }
-          };
-        }
+        };
         $rootScope.auction_doc.stages.forEach(filter_func);
         $rootScope.auction_doc.initial_bids.forEach(filter_func);
-        $rootScope.minimal_bid = bids.sort(function(a, b) {
-          if ($rootScope.auction_doc.auction_type == 'meat') {
-            var diff = math.fraction(a.amount_features) - math.fraction(b.amount_features);
-          } else {
-            var diff = a.amount - b.amount;
-          }
-          if (diff == 0) {
-            return Date.parse(a.time || "") - Date.parse(b.time || "");
-          }
-          return diff;
-        })[0];
+        if ($rootScope.is_esco){
+          $rootScope.minimal_bid = bids.sort(function(a, b) {
+              if ($rootScope.auction_doc.auction_type == 'meat') {
+                var diff = math.fraction(math.eval(a.amount_features)) - math.fraction(math.eval(b.amount_features));
+              } else {
+                diff = math.eval(a.amount) - math.eval(b.amount);
+              }
+              if (diff === 0) {
+                return Date.parse(a.time || "") - Date.parse(b.time || "");
+              }
+              return diff;
+           }).reverse()[0];
+
+        }else{
+          $rootScope.minimal_bid = bids.sort(function(a, b) {
+              if ($rootScope.auction_doc.auction_type == 'meat') {
+                var diff = math.fraction(a.amount_features) - math.fraction(b.amount_features);
+              } else {
+                var diff = a.amount - b.amount;
+              }
+              if (diff == 0) {
+                return Date.parse(a.time || "") - Date.parse(b.time || "");
+              }
+              return diff;
+          })[0];
+        }
       }
     };
 
@@ -451,36 +522,29 @@ angular.module('auction').controller('AuctionController',[
             function(response) {
                 var doc = response.data;
                 if (init){
-                    if (doc.procurementMethodType === 'esco') {
-                        $log.error({message: 'Please use the correct link to view the auction'});
-                        $rootScope.document_not_found = true;
-                        var msg_correct_link = $filter('translate')('Please use the correct link to view the auction.');
-                        document.body.insertAdjacentHTML(
-                            'afterbegin',
-                            '<div class="container alert alert-danger" role="alert">' + msg_correct_link +'</div>'
-                        );
-                    } else {
-                      $rootScope.http_error_timeout = $rootScope.default_http_error_timeout;
-                      $rootScope.title_ending = AuctionUtils.prepare_title_ending_data(doc, $rootScope.lang);
-                      if (AuctionUtils.UnsupportedBrowser()) {
-                        $timeout(function() {
-                          $rootScope.unsupported_browser = true;
-                          growl.error($filter('translate')('Your browser is out of date, and this site may not work properly.') + '<a style="color: rgb(234, 4, 4); text-decoration: underline;" href="http://browser-update.org/uk/update.html">' + $filter('translate')('Learn how to update your browser.') + '</a>', {
-                            ttl: -1,
-                            disableCountDown: true
-                          });
-                        }, 500);
-                      };
-                      $rootScope.replace_document(doc);
+                  $rootScope.http_error_timeout = $rootScope.default_http_error_timeout;
+                  $rootScope.title_ending = AuctionUtils.prepare_title_ending_data(doc, $rootScope.lang);
+                  if (AuctionUtils.UnsupportedBrowser()) {
+                    $timeout(function() {
+                      $rootScope.unsupported_browser = true;
+                      growl.error($filter('translate')('Your browser is out of date, and this site may not work properly.') + '<a style="color: rgb(234, 4, 4); text-decoration: underline;" href="http://browser-update.org/uk/update.html">' + $filter('translate')('Learn how to update your browser.') + '</a>', {
+                        ttl: -1,
+                        disableCountDown: true
+                      });
+                    }, 500);
+                  };
+                  $rootScope.is_esco = doc.procurementMethodType === 'esco';
+                  $rootScope.procurement_criteria = $rootScope.is_esco ? 'maximum' : 'minimum';
 
-                      if ($rootScope.auction_doc.current_stage == ($rootScope.auction_doc.stages.length - 1)) {
-                        $log.info({
-                          message: 'Auction ends already'
-                        });
-                      }else{
-                        $rootScope.start_sync();
-                      }
-                    }
+                  $rootScope.replace_document(doc);
+
+                  if ($rootScope.auction_doc.current_stage == ($rootScope.auction_doc.stages.length - 1)) {
+                    $log.info({
+                      message: 'Auction ends already'
+                    });
+                  }else{
+                    $rootScope.start_sync();
+                  }
                 }else{
                     $rootScope.replace_document(doc);
                 }
@@ -536,7 +600,6 @@ angular.module('auction').controller('AuctionController',[
                         heartbeat_interval = null;
                         console.warn("Closing connection. Reason: " + e.message);
                         socket.close(1000, "Closing unhealthy connection");
-                        console.log(socket);
                     }
                 }, 5000);
             }
@@ -558,7 +621,6 @@ angular.module('auction').controller('AuctionController',[
             $timeout(function() {
                 $rootScope.start_sync();
             }, 1000);
-
 
             if ($rootScope.restart_retries < 1){
                 growl.error('Synchronization failed', {ttl: 2000});
@@ -608,15 +670,22 @@ angular.module('auction').controller('AuctionController',[
                     $rootScope.bidder_coeficient = math.fraction(response.data.coeficient);
                     $log.info({message: "Get coeficient " + $rootScope.bidder_coeficient});
                 }
-                if(response.data.amount && response.data.amount !== -1){
+                if(response.data.amount){
                     $rootScope.form.bid = response.data.amount;
                     $rootScope.allow_bidding = false;
                     $log.info({ message: "RestoreBidAmount " + $rootScope.form.bid });
+                }else if(response.data.yearlyPaymentsPercentage){  // esco
+                  $rootScope.form.contractDurationYears = response.data.contractDurationYears;
+                  $rootScope.form.contractDurationDays = response.data.contractDurationDays;
+                  $rootScope.form.yearlyPaymentsPercentage = response.data.yearlyPaymentsPercentage * 100;
+                  if(response.data.changed){  // show edit form
+                    $rootScope.allow_bidding = false;
+                  }
                 }
                 on_finish();
             },
             function(response) {
-                if (response.status == 401) {
+                if (response.status == 401 || response.status == 400) {
                   $log.info({
                       message: "Authorization failed: " + response.data
                   });
@@ -694,12 +763,35 @@ angular.module('auction').controller('AuctionController',[
       }
       $rootScope.form.full_price = new_full_price;
     };
-    $rootScope.calculate_full_price_temp = function() {
-      var new_form_bid;
-      if(angular.isDefined($rootScope.form.full_price)){
-        new_form_bid = (math.fix((math.fraction($rootScope.form.full_price) * $rootScope.bidder_coeficient) * 100)) / 100;
+    $rootScope.get_annual_costs_reduction = function(bidder_id) {  // esco
+      for (var initial_bid in $rootScope.auction_doc.initial_bids) {
+        if (bidder_id === $rootScope.auction_doc.initial_bids[initial_bid].bidder_id) {
+          return $rootScope.auction_doc.initial_bids[initial_bid].annualCostsReduction;
+        }
       }
-      $rootScope.form.bid = new_form_bid;
+    };
+    $rootScope.calculate_full_price_temp = function() {
+      if ($rootScope.is_esco){
+          if ($rootScope.form.BidsForm.$valid) {
+            var bid = AuctionUtils.npv($rootScope.form.contractDurationYears,
+              $rootScope.form.contractDurationDays,
+              parseFloat(($rootScope.form.yearlyPaymentsPercentage / 100).toFixed(5)),
+              $rootScope.get_annual_costs_reduction($rootScope.bidder_id),
+              $rootScope.auction_doc.noticePublicationDate,
+              $rootScope.auction_doc.NBUdiscountRate
+            );
+          } else {
+            bid = 0;
+          }
+          $rootScope.form.full_price_temp = bid * $rootScope.bidder_coeficient;
+          $rootScope.form.full_price = $rootScope.form.full_price_temp;
+      }else{
+          var new_form_bid;
+          if(angular.isDefined($rootScope.form.full_price)){
+            new_form_bid = (math.fix((math.fraction($rootScope.form.full_price) * $rootScope.bidder_coeficient) * 100)) / 100;
+          }
+          $rootScope.form.bid = new_form_bid;
+      }
     };
     $rootScope.main();
 }]);

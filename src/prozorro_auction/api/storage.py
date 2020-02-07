@@ -1,6 +1,7 @@
 from prozorro_auction.storage import get_mongodb_collection
 from prozorro_auction.settings import logger, MONGODB_ERROR_INTERVAL
 from pymongo import DESCENDING
+from pymongo.collection import ReturnDocument
 from pymongo.errors import PyMongoError
 from aiohttp import web
 import asyncio
@@ -11,6 +12,7 @@ LIST_FIELDS = (
 GET_FIELDS = (
     "_id", "auction_type", "procurementMethodType", "tenderID", "title", "title_en", "procuringEntity", "items", "features",
     "start_at", "stages", "current_stage", "initial_bids", "results", "modified", "minimalStep",
+    "minimalStepPercentage", "noticePublicationDate", "NBUdiscountRate",  # esco
 )
 
 
@@ -92,19 +94,19 @@ async def insert_auction(data):
 async def update_auction_bid_stage(auction_id, bid_id, stage_id, value):
     collection = get_mongodb_collection()
     try:
-        result = await collection.update_one(
+        result = await collection.find_one_and_update(
             {"_id": auction_id},
             {
                 "$set" if value else "$unset": {
                     f"bids.$[bid].stages.{stage_id}": value
                 },
             },
-            upsert=False,
             array_filters=[
                 {"bid.id": bid_id},
-            ]
+            ],
+            return_document=ReturnDocument.AFTER
         )
-        return result.upserted_id
+        return result
     except PyMongoError as e:
         logger.error(f"Save auction {type(e)}: {e}", extra={"MESSAGE_ID": "MONGODB_EXC"})
         raise web.HTTPInternalServerError()

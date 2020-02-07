@@ -2,7 +2,8 @@ from prozorro_auction.settings import logger, API_HEADERS
 from datetime import datetime
 from prozorro_auction.chronograph.tasks import upload_audit_document, send_auction_results
 from prozorro_auction.chronograph.model import (
-    sort_bids, get_label_dict, get_bidder_number, update_auction_results, publish_bids_made_in_current_stage
+    sort_bids, get_label_dict, get_bidder_number, update_auction_results,
+    publish_bids_made_in_current_stage, copy_bid_stage_fields,
 )
 from prozorro_auction.chronograph.requests import get_tender_documents, get_tender_bids, get_tender_public_bids
 import aiohttp
@@ -48,33 +49,27 @@ async def on_start_stage_pause(auction):
     # set initial_bids
     if current_stage == -1:
         logger.info("Set initial bids")
-        auction["initial_bids"] = [
-            dict(
-                bidder_id=bid["id"],
-                amount=bid["value"]["amount"],
-                amount_features=bid.get("amount_features"),
-                coeficient=bid.get("coeficient"),
-                time=bid["date"],
-                label=get_label_dict(n),
-            )
-            for n, bid in enumerate(sort_bids(auction["bids"]))
-        ]
+        auction["initial_bids"] = []
+        for n, bid in enumerate(sort_bids(auction["bids"])):
+            initial_bid = dict(label=get_label_dict(n))
+            copy_bid_stage_fields(bid, initial_bid)
+            auction["initial_bids"].append(initial_bid)
+
+        # and set the (possible) results section
+        update_auction_results(auction)
 
     # set "bidder" for bid rounds according to the bids they made before
     stages = auction.get("stages")
     index = current_stage + 2
     logger.info(f"Set {index}:{index + len(auction['bids'])} bid stages order")
     for i, bid in enumerate(sort_bids(auction["bids"])):
-        stages[index + i].update(
-            bidder_id=bid["id"],
-            amount=bid["value"]["amount"],
-            amount_features=bid.get("amount_features"),
-            coeficient=bid.get("coeficient"),
-            time=bid["date"],
+        bid_stage = dict(
             label=get_label_dict(
                 get_bidder_number(bid["id"], auction["initial_bids"])
             )
         )
+        copy_bid_stage_fields(bid, bid_stage)
+        stages[index + i].update(bid_stage)
 
 
 async def on_end_stage_bids(auction):
