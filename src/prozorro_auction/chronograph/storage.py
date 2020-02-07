@@ -39,11 +39,13 @@ async def update_auction(data):
     collection = get_mongodb_collection()
     set_data = {k: v for k, v in data.items() if k in UPDATE_CHRONOGRAPH_FIELDS}
     update = {"$currentDate": {"modified": True}}
-    if set_data:
-        update["$set"] = set_data
+
     if "timer" in set_data and set_data["timer"] is None:
         del set_data["timer"]
         update["$unset"] = {"timer": ""}
+
+    if set_data:
+        update["$set"] = set_data
 
     retries = 0
     while True:
