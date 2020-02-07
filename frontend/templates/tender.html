@@ -128,6 +128,21 @@
             <br/>
             <a ng-if="return_url" class="btn btn-block btn-success" href="{{ return_url }}" translate>Return to Tender</a>
         </div>
+
+        <div class="container-fluid" ng-if="bidder_id && auction_doc.current_stage < 0">
+            <div class="panel panel-default bg-warning fixed-bottom">
+                <div class="panel-body bg-warning">
+                    <div class="row">
+                        <div class="col-xs-12">
+                            <div class="container text-center">
+                            <h4 id="registered-bidder-msg" translate>You are registered as a bidder. Wait for the start of the auction.</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     {% endraw %}
