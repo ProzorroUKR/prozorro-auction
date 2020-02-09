@@ -228,3 +228,19 @@ def build_results_bids_patch(auction, tender_bids):
                     )
                 break
     return data
+
+
+def set_auction_bidders_real_names(auction, tender_bids):
+    bidders = {
+        b["id"]: b["tenderers"][0]
+        for b in tender_bids
+    }
+    for section_name in ("initial_bids", "stages", "results"):
+        for section in auction[section_name]:
+            if "bidder_id" in section and section['bidder_id'] in bidders:
+                bidder = bidders[section['bidder_id']]
+                section["label"] = dict(
+                    uk=bidder["name"],
+                    ru=bidder.get("name_ru") or bidder["name"],
+                    en=bidder.get("name_en") or bidder["name"],
+                )

@@ -1,11 +1,13 @@
 from prozorro_auction.settings import logger, API_HEADERS
-from datetime import datetime
-from prozorro_auction.chronograph.tasks import publish_auction_results
+from datetime import datetime, timedelta
+from prozorro_auction.chronograph.requests import get_tender_documents, get_tender_bids, get_tender_public_bids
+from prozorro_auction.chronograph.tasks import upload_audit_document, send_auction_results
+from prozorro_auction.chronograph.storage import update_auction
+from prozorro_auction.utils import get_now
 from prozorro_auction.chronograph.model import (
     sort_bids, get_label_dict, get_bidder_number, update_auction_results,
-    publish_bids_made_in_current_stage, copy_bid_stage_fields,
+    publish_bids_made_in_current_stage, copy_bid_stage_fields, set_auction_bidders_real_names,
 )
-from prozorro_auction.chronograph.requests import get_tender_public_bids
 import aiohttp
 
 
@@ -88,25 +90,42 @@ async def on_end_stage_bids(auction):
 
 
 async def on_start_stage_pre_announcement(auction):
-    await publish_auction_results(auction)
+    pass   # i don't want run long running tasks here, as it would delay finishing of the last bid stage
 
 
 async def on_start_stage_announcement(auction):
     """
-    reveal tenderer names
+    1 upload audit document
+    2 send auction results to tenders api
+    3 get bid names from api and replace labels
     """
-    async with aiohttp.ClientSession(headers=API_HEADERS) as session:
-        tender_bids = await get_tender_public_bids(session, auction["tender_id"])  # should be public now
-        bid_names = {
-            b["id"]: b["tenderers"][0]["name"]
-            for b in tender_bids
-        }
-        for section_name in ("initial_bids", "stages", "results"):
-            for section in auction[section_name]:
-                if "bidder_id" in section and section['bidder_id'] in bid_names:
-                    section["label"] = dict(
-                        uk=bid_names[section['bidder_id']],
-                        ru=bid_names[section['bidder_id']],
-                        en=bid_names[section['bidder_id']],
-                    )
+    # increase timer as this task usually takes more than 2 sec
+    await update_auction(
+        {"_id": auction["_id"], "timer": get_now() + timedelta(seconds=60)},
+        update_date=False
+    )
 
+    async with aiohttp.ClientSession(headers=API_HEADERS) as session:
+        if not auction.get("_audit_document_posted"):
+            # post audit document
+            tender_documents = await get_tender_documents(session, auction["tender_id"])  # public data
+            await upload_audit_document(session, auction, tender_documents)
+
+            await update_auction(
+                {"_id": auction["_id"], "_audit_document_posted": True},
+                update_date=False
+            )
+
+        if not auction.get("_auction_results_sent"):
+            # send results to the api
+            tender_bids = await get_tender_bids(session, auction["tender_id"])  # private data
+            await send_auction_results(session, auction, tender_bids)
+
+            await update_auction(
+                {"_id": auction["_id"], "_auction_results_sent": True},
+                update_date=False
+            )
+
+        # get and reveal tenderer names
+        tender_bids = await get_tender_public_bids(session, auction["tender_id"])  # should be public now
+        set_auction_bidders_real_names(auction, tender_bids)

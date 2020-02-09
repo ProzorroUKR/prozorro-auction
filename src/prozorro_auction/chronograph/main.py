@@ -1,9 +1,11 @@
 from prozorro_auction.chronograph.storage import increase_and_read_expired_timer, update_auction
 from prozorro_auction.chronograph.stages import tick_auction
 from prozorro_auction.exceptions import RetryException
-from prozorro_auction.settings import logger, PROCESSING_LOCK
+from prozorro_auction.settings import logger, TZ
+from prozorro_auction.utils import get_now
 from datetime import timedelta
 from time import time
+import pytz
 import asyncio
 import signal
 
@@ -49,6 +51,7 @@ async def chronograph_loop():
     while KEEP_RUNNING:
         auction = await increase_and_read_expired_timer()
         if auction:
+            timer = auction["timer"]
             _start_time = time()
             try:
                 await tick_auction(auction)
@@ -62,10 +65,12 @@ async def chronograph_loop():
                 await update_auction(auction)
 
                 processing_time = time() - _start_time
-                if processing_time >= PROCESSING_LOCK:
+                current_ts = get_now()
+                timer_time = pytz.utc.localize(timer).astimezone(TZ)
+                if current_ts >= timer_time:
                     message = (
-                        f"Auction {auction['_id']} processing time equals to {processing_time} seconds "
-                        f"and is bigger than processing lock time - {PROCESSING_LOCK} seconds."
+                        f"Auction {auction['_id']} processing finished at {current_ts}, time - {processing_time}"
+                        f"While it's locked only by {auction['timer']} ({timer_time})"
                         "This may lead to inconsistency of data!"
                     )
                     logger.critical(message)

@@ -1,7 +1,9 @@
 from prozorro_auction.storage import get_mongodb_collection
-from prozorro_auction.settings import logger, TZ, PROCESSING_LOCK, MONGODB_ERROR_INTERVAL
+from prozorro_auction.settings import logger, PROCESSING_LOCK, MONGODB_ERROR_INTERVAL
+from prozorro_auction.utils import get_now
 from pymongo.errors import PyMongoError
-from datetime import datetime, timedelta
+from pymongo.collection import ReturnDocument
+from datetime import timedelta
 import asyncio
 
 
@@ -14,19 +16,22 @@ UPDATE_CHRONOGRAPH_FIELDS = (
     "initial_bids",
     "results",
     "bids",  # to publish posted bids
+    "_audit_document_posted",
+    "_auction_results_sent",
 )
 
 
 async def increase_and_read_expired_timer():
     collection = get_mongodb_collection()
     while True:
-        current_ts = datetime.now(tz=TZ)
+        current_ts = get_now()
         # this is needed to guarantee that this object will not be touched by another chronograph
         processing_lock = timedelta(seconds=PROCESSING_LOCK)
         try:
             auction = await collection.find_one_and_update(
                 {'timer': {'$exists': True, '$lte': current_ts}},
-                {'$set': {'timer': current_ts + processing_lock}}
+                {'$set': {'timer': current_ts + processing_lock}},
+                return_document=ReturnDocument.AFTER
             )
         except PyMongoError as e:
             logger.warning(f"Read timer error {type(e)}: {e}",
