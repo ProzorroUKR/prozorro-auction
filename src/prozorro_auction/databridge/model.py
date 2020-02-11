@@ -102,11 +102,11 @@ def import_bid(bid, lot_bid, features, parameters):
     if parameters:
         bid_data["parameters"] = parameters
         bid_data["coeficient"] = str(calculate_coeficient(features, parameters))
-        if "amountPerformance" in bid["value"]:  # esco
-            amount = str(Fraction(bid["value"]["amountPerformance"]))
+        if "amountPerformance" in lot_bid["value"]:  # esco
+            amount = str(Fraction(lot_bid["value"]["amountPerformance"]))
             reverse = True
         else:
-            amount = bid["value"]["amount"]
+            amount = lot_bid["value"]["amount"]
             reverse = False
         bid_data["amount_features"] = str(cooking(amount, features, parameters, reverse=reverse))
     return bid_data
