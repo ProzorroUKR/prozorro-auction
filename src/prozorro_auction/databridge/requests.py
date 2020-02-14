@@ -35,8 +35,9 @@ async def get_tender_data(session, tender_id, url_suffix=""):
     return await request_tender(session, tender_id, url_suffix=url_suffix)
 
 
-async def patch_tender_auction(session, tender_id, json):
-    return await request_tender(session, tender_id, json, url_suffix="/auction",  method_name="patch")
+async def patch_tender_auction(session, tender_id, lot_id, json):
+    suffix = f"/auction/{lot_id}" if lot_id else "/auction"
+    return await request_tender(session, tender_id, json, url_suffix=suffix,  method_name="patch")
 
 
 async def request_tender(session, tender_id, json=None, method_name="get", url_suffix="", retries=20):

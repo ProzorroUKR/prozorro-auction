@@ -45,6 +45,6 @@ async def post_auction_urls(session, auction, tender):
     When auction is scheduled it's urls are posted to the tenders api
     """
     patch_data = build_urls_patch(auction, tender)
-    await patch_tender_auction(session, tender["id"], patch_data)
+    await patch_tender_auction(session, tender["id"], auction["lot_id"], patch_data)
     logger.info(f"Set auction and participation urls for auction {auction['_id']}",
                 extra={"MESSAGE_ID": "SET_AUCTION_URLS"})

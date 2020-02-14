@@ -128,7 +128,18 @@ def copy_bid_tokens(source, dst):
 def build_urls_patch(auction, tender):
     auction_url = f"{AUCTION_HOST}/tenders/{auction['_id']}"
     patch_bids = []
-    patch_data = {"data": {"auctionUrl": auction_url, "bids": patch_bids}}
+    patch_data = {"data": {"bids": patch_bids}}
+
+    if auction["lot_id"]:
+        patch_data["data"]["lots"] = [
+            {"auctionUrl": auction_url}
+            if auction["lot_id"] == lot["id"]
+            else {}
+            for lot in tender["lots"]
+        ]
+    else:
+        patch_data["data"]["auctionUrl"] = auction_url
+
     for tender_bid in tender["bids"]:
         bid_patch = {}
         patch_bids.append(bid_patch)
@@ -150,7 +161,6 @@ def build_urls_patch(auction, tender):
                         participationUrl=participation_url,
                     )
                 break
-
     return patch_data
 
 
