@@ -41,7 +41,7 @@ def get_data_from_tender(tender):
     copy_fields = (
         "tenderID", "title", "title_en", "description", "description_en",
         "procurementMethodType", "procuringEntity", "minimalStep", "value",
-        "NBUdiscountRate", "noticePublicationDate", "minimalStepPercentage", "minValue",
+        "NBUdiscountRate", "noticePublicationDate", "minimalStepPercentage",
         "fundingKind", "yearlyPaymentsPercentageRange",
     )
     for f in copy_fields:
@@ -74,9 +74,6 @@ def get_data_from_tender(tender):
                             parameters = [i for i in b.get("parameters", "") if i["code"] in codes]
                             bid_data = import_bid(b, lot_bid, features, parameters)
                             auction["bids"].append(bid_data)
-
-                if tender["procurementMethodType"] == "esco":
-                    auction["minValue"] = lot["value"]
 
                 yield auction
     else:
