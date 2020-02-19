@@ -86,7 +86,7 @@ services:
       - dev-env_apinet
 
   frontend:
-    build: ./frontend
+    image: docker-registry.prozorro.gov.ua/cdb/prozorro-auction-frontend:latest
     volumes:
       - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
       - ./frontend/build:/app
