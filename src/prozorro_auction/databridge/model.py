@@ -178,7 +178,7 @@ def build_stages(auction):
         two_min = five_min = 0
         auction["start_at"] = get_now()
     else:
-        two_min = 2 * 50
+        two_min = 2 * 60
         five_min = 5 * 60
 
     start_at = auction["start_at"]
