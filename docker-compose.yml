@@ -63,7 +63,7 @@ services:
       - mongo
     networks:
       - default
-      - dev-env_apinet
+      - openprocurementapi_apinet
 
   chronograph:
     build: .
@@ -83,13 +83,12 @@ services:
       - mongo
     networks:
       - default
-      - dev-env_apinet
+      - openprocurementapi_apinet
 
   frontend:
     image: docker-registry.prozorro.gov.ua/cdb/prozorro-auction-frontend:latest
     volumes:
-      - ./frontend/nginx.conf:/etc/nginx/conf.d/default.conf
-      - ./frontend/build:/app
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - api
     ports:
@@ -99,5 +98,5 @@ services:
 
 networks:
     default: {}
-    dev-env_apinet:
+    openprocurementapi_apinet:
         external: true
