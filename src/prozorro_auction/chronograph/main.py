@@ -83,4 +83,5 @@ async def chronograph_loop():
 
 if __name__ == '__main__':
     configure_signals()
-    asyncio.run(chronograph_loop())
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(chronograph_loop())

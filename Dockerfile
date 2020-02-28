@@ -1,4 +1,4 @@
-FROM python:3.7-slim
+FROM python:3.6-slim
 RUN mkdir /app
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends git && apt-get purge -y --auto-remove && rm -rf /var/lib/apt/lists/*
