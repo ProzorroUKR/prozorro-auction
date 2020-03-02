@@ -21,6 +21,12 @@ async def request_tender(session, tender_id, json=None, method_name="get", url_s
             except (aiohttp.ClientPayloadError, JSONDecodeError) as e:
                 logger.warning(e, extra={"MESSAGE_ID": "HTTP_EXCEPTION"})
             else:
+                # ERROR:root:Error while closing connector:
+                #    SSLError(1, '[SSL: KRB5_S_INIT] application data after close notify (_ssl.c:2676)')
+                # return response["data"] | TypeError: 'NoneType' object is not subscriptable
+                if not isinstance(response, dict) or "data" not in response:
+                    logger.warning("Unexpected response contents",
+                                   extra={"MESSAGE_ID": "REQUEST_UNEXPECTED_ERROR", "CONTENTS": response})
                 return response["data"]
         elif resp.status == 412:
             logger.warning("Precondition Failed while requesting tender",
