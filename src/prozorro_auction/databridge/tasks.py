@@ -1,5 +1,5 @@
 from prozorro_auction.settings import logger
-from prozorro_auction.databridge.requests import patch_tender_auction
+from prozorro_auction.databridge.requests import patch_tender_auction, request_tender
 from prozorro_auction.databridge.model import copy_bid_tokens, build_urls_patch
 from prozorro_auction.databridge.storage import update_auction, read_auction
 from prozorro_auction.chronograph.tasks import send_auction_results
@@ -14,7 +14,8 @@ async def schedule_auction(session, auction, tender):
             await update_auction(auction, insert=False)
 
         elif auction["mode"] == "quick(mode:no-auction)":
-            await send_auction_results(session, auction, tender["bids"])
+            await send_auction_results(session, auction, tender["bids"],
+                                       request_tender_method=request_tender)  # to handle retries
 
         else:
             saved_auction = await read_auction(auction["_id"])
