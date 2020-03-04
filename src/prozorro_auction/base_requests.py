@@ -27,7 +27,8 @@ async def request_tender(session, tender_id, json=None, method_name="get", url_s
                 if not isinstance(response, dict) or "data" not in response:
                     logger.warning("Unexpected response contents",
                                    extra={"MESSAGE_ID": "REQUEST_UNEXPECTED_ERROR", "CONTENTS": response})
-                return response["data"]
+                else:
+                    return response["data"]
         elif resp.status == 412:
             logger.warning("Precondition Failed while requesting tender",
                            extra={"MESSAGE_ID": "PRECONDITION_FAILED"})
