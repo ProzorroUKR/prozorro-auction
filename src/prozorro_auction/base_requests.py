@@ -9,7 +9,7 @@ async def request_tender(session, tender_id, json=None, method_name="get", url_s
     method = getattr(session, method_name)
     kwargs = {}
     if json:
-        kwargs["json"] = json
+        kwargs["json"] = context["JSON"] = json
     try:
         resp = await method(f"{BASE_URL}/{tender_id}{url_suffix}", **kwargs)
     except aiohttp.ClientError as e:

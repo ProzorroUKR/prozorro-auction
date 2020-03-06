@@ -1,7 +1,6 @@
 from prozorro_auction.base_requests import request_tender as base_request_tender
 from prozorro_auction.settings import logger
 from prozorro_auction.exceptions import RequestRetryException, SkipException
-from contextlib import contextmanager
 import asyncio
 
 
