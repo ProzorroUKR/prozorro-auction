@@ -20,7 +20,7 @@ async def upload_audit_document(session, auction, documents):
 
 async def send_auction_results(session, auction, tender_bids, request_tender_method=None):
     data = build_results_bids_patch(auction, tender_bids)
-    await post_tender_auction(session, auction["tender_id"], data, request_tender_method)
+    await post_tender_auction(session, auction["tender_id"], auction["lot_id"], data, request_tender_method)
     logger.info(
         f"Auction {auction['_id']} results sent: {data}",
         extra={"MESSAGE_ID": "AUCTION_WORKER_API_APPROVED_DATA"}

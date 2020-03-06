@@ -58,9 +58,10 @@ async def get_tender_bids(session, tender_id):
     return data.get("bids", "")
 
 
-async def post_tender_auction(session, tender_id, json, request_tender_method=None):
+async def post_tender_auction(session, tender_id, lot_id, json, request_tender_method=None):
+    suffix = f"/auction/{lot_id}" if lot_id else "/auction"
     request_tender_method = request_tender_method or request_tender
-    return await request_tender_method(session, tender_id, json, url_suffix="/auction", method_name="post")
+    return await request_tender_method(session, tender_id, json, url_suffix=suffix, method_name="post")
 
 
 async def publish_tender_document(session, tender_id, data, doc_id=None):
