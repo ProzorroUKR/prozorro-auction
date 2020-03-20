@@ -147,7 +147,13 @@ def copy_bid_stage_fields(bid, stage):
 def build_audit_document(auction):
     timeline = {
         "auction_start": {
-            "initial_bids": auction["initial_bids"],
+            "initial_bids": [
+                {
+                    "bidder" if k == "bidder_id" else k: v
+                    for k, v in bid.items()
+                }
+                for bid in auction["initial_bids"]
+            ],
             "time": datetime_to_str(auction["start_at"]),
         },
         "results": {
@@ -183,8 +189,7 @@ def build_audit_document(auction):
             if auction["features"]:
                 timeline[label][f"turn_{turn}"]["amount_features"] = str(stage.get("amount_features"))
                 timeline[label][f"turn_{turn}"]["coeficient"] = str(stage.get("coeficient"))
-    print(audit)
-    file_data = safe_dump(audit, default_flow_style=False)
+    file_data = safe_dump(audit, default_flow_style=False, encoding="utf-8", allow_unicode=True)
     file_name = f"audit_{auction['_id']}.yaml"
     return file_name, file_data
 
