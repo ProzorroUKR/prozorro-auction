@@ -4,30 +4,26 @@ from prozorro_auction.exceptions import RequestRetryException, SkipException
 import asyncio
 
 
-async def get_tender_document(session, tender, private_only=False, public_only=False):
+async def get_tender_document(session, tender):
     # TODO add to /auction api response required public data (procuringEntity, title, description..
     # TODO .. bid.tenderers ?
-    if public_only:
-        public_data = await get_tender_data(session, tender["id"])
-        tender.update(public_data)
-    elif private_only:
-        private_data = await get_tender_data(session, tender["id"], url_suffix="/auction")
-        tender.update(private_data)
-    else:
-        public_data, private_data = await asyncio.gather(
-            get_tender_data(session, tender["id"]),
-            get_tender_data(session, tender["id"], url_suffix="/auction")
-        )
-        tender.update(public_data)
-        tender.update(private_data)
-        for bid in tender.get("bids", ""):
-            for public_bid in public_data.get("bids", ""):
-                if bid["id"] == public_bid["id"]:
-                    bid.update(public_bid)
-        for lot in tender.get("lots", ""):
-            for public_lot in public_data.get("lots", ""):
-                if lot["id"] == public_lot["id"]:
-                    lot.update(public_lot)
+    public_data, private_data = await asyncio.gather(
+        get_tender_data(session, tender["id"]),
+        get_tender_data(session, tender["id"], url_suffix="/auction")
+    )
+    tender.update(public_data)
+    tender.update(private_data)
+    if "bids" not in tender:
+        logger.critical(f"Skip processing {tender['id']} as there are no bids")
+        raise SkipException()
+    for bid in tender["bids"]:
+        for public_bid in public_data.get("bids", ""):
+            if bid["id"] == public_bid["id"]:
+                bid.update(public_bid)
+    for lot in tender.get("lots", ""):
+        for public_lot in public_data.get("lots", ""):
+            if lot["id"] == public_lot["id"]:
+                lot.update(public_lot)
     return tender
 
 
