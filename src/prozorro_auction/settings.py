@@ -34,7 +34,8 @@ DS_HEADERS = {
 
 PROCUREMENT_TYPES = os.environ.get(
     "PROCUREMENT_TYPES",
-    "closeFrameworkAgreementUA,belowThreshold,aboveThresholdEU,aboveThresholdUA,aboveThresholdUA.defense,"
+    "closeFrameworkAgreementUA,closeFrameworkAgreementSelectionUA,"
+    "belowThreshold,aboveThresholdEU,aboveThresholdUA,aboveThresholdUA.defense,"
     "competitiveDialogueEU.stage2,competitiveDialogueUA.stage2,esco"
 ).split(",")
 
