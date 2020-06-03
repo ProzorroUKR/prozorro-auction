@@ -1,6 +1,14 @@
-from aiohttp import web
-from prozorro_auction.settings import API_PORT, logger
+import sentry_sdk
+from prozorro_auction.settings import API_PORT, logger, SENTRY_DSN, SENTRY_ENVIRONMENT
 from prozorro_auction.api.views import routes
+from sentry_sdk.integrations.aiohttp import AioHttpIntegration
+from aiohttp import web
+
+
+sentry_sdk.init(
+        dsn=SENTRY_DSN, environment=SENTRY_ENVIRONMENT,
+        integrations=[AioHttpIntegration()]
+    )
 
 
 def create_application():

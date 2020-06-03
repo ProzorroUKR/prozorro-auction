@@ -50,5 +50,5 @@ AUCTION_HOST = os.getenv("AUCTION_HOST", "http://localhost:8080")
 assert not AUCTION_HOST.endswith("/")
 assert AUCTION_HOST.startswith("http")
 
-
-
+SENTRY_DSN = os.environ.get("SENTRY_DSN", "http://aaf878c30bfe4da79568a78fe9ceb71a@sentry.dc.prozorro.gov.ua/38")
+SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT", None)
