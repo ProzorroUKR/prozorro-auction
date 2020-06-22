@@ -13,7 +13,7 @@ LIST_FIELDS = (
 GET_FIELDS = (
     "_id", "auction_type", "procurementMethodType", "tenderID", "title", "title_en", "procuringEntity", "items", "features",
     "start_at", "stages", "current_stage", "initial_bids", "results", "modified", "minimalStep",
-    "minimalStepPercentage", "noticePublicationDate", "NBUdiscountRate",  # esco
+    "minimalStepPercentage", "noticePublicationDate", "NBUdiscountRate", "value" # esco
 )
 
 
