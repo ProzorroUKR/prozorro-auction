@@ -17,7 +17,6 @@ import aiohttp
 async def tick_auction(auction):
     now = datetime.now()
     current_stage = auction.get("current_stage", -1)
-    import pdb; pdb.set_trace()
     if current_stage == -101:
         current_stage = -1
         auction["current_stage"] = current_stage
@@ -43,7 +42,6 @@ async def tick_auction(auction):
         logger.info(f"Next stage in auction {auction['_id']} has not started and auction will be rescheduled")
         raise RetryException()
 
-    # import pdb; pdb.set_trace()
     await run_stage_methods(auction, stages, current_stage)
 
     # update stage fields
