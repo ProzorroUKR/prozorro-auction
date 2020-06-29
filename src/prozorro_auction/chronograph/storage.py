@@ -15,6 +15,7 @@ UPDATE_CHRONOGRAPH_FIELDS = (
     "stages",
     "initial_bids",
     "results",
+    "start_at",
     "bids",  # to publish posted bids
     "_audit_document_posted",
     "_auction_results_sent",

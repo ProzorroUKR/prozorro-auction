@@ -20,7 +20,11 @@ async def schedule_auction(session, auction, tender):
         else:
             saved_auction = await read_auction(auction["_id"])
             if saved_auction:
-                if saved_auction.get("current_stage") is not None:
+                current_stage = saved_auction.get("current_stage")
+                # Strange part of code because
+                # If auction get in time current_sage will be -1
+                # And in that place auction will be skipped
+                if current_stage is not None and current_stage not in [-101, -1]:
                     logger.info(f"Skipping {auction['_id']} already started at {saved_auction['start_at']}")
                     return
 

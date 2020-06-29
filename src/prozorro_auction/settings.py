@@ -51,5 +51,4 @@ AUCTION_HOST = os.getenv("AUCTION_HOST", "http://localhost:8080")
 assert not AUCTION_HOST.endswith("/")
 assert AUCTION_HOST.startswith("http")
 
-
-
+LATENCY_TIME = os.getenv("LATENCY_TIME", 10 * 60)

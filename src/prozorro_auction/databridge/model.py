@@ -165,7 +165,11 @@ def get_auctions_from_tender(tender):
     for auction in get_data_from_tender(tender):
         auction["start_at"] = convert_datetime(auction["start_at"])
         if auction["start_at"] < get_now():
-            logger.info(f"Skipping {auction['_id']} start date {auction['start_at']} in the past")
+            logger.info(f"Auction {auction['_id']} has not started and will be rescheduled")
+            auction["stages"] = build_stages(auction)
+            auction["current_stage"] = -101
+            auction["timer"] = get_now()
+            yield auction
         else:
             auction["stages"] = build_stages(auction)
             auction["current_stage"] = -1

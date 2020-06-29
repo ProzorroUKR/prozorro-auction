@@ -8,20 +8,42 @@ from prozorro_auction.chronograph.model import (
     sort_bids, get_label_dict, get_bidder_number, update_auction_results,
     publish_bids_made_in_current_stage, copy_bid_stage_fields, set_auction_bidders_real_names,
 )
+from prozorro_auction.databridge.model import build_stages
+from prozorro_auction.settings import LATENCY_TIME
+from prozorro_auction.exceptions import RetryException
 import aiohttp
 
 
 async def tick_auction(auction):
+    now = datetime.now()
     current_stage = auction.get("current_stage", -1)
+    import pdb; pdb.set_trace()
+    if current_stage == -101:
+        current_stage = -1
+        auction["current_stage"] = current_stage
+        auction["start_at"] = now
+        auction["stages"] = build_stages(auction)
+        for stage in auction["stages"]:
+            if stage["start"].tzinfo:
+                stage["start"] = stage["start"].astimezone(None).replace(tzinfo=None)
+
     stages = auction.get("stages")
     next_stage_index = current_stage + 1
     if next_stage_index >= len(stages):
         return logger.error(f"Chronograph tries to update {auction['_id']} "
                             f"to a non-existed stage {next_stage_index}")
+
     next_stage = stages[next_stage_index]
-    if next_stage["start"] > datetime.now():
+
+    if next_stage["start"] > now:
         return logger.error(f"Chronograph tries to update {auction['_id']} too early {next_stage['start']}")
 
+    if next_stage["start"] + timedelta(seconds=LATENCY_TIME) < now:
+        await update_auction({"_id": auction["_id"], "current_stage": -101, "results": []})
+        logger.info(f"Next stage in auction {auction['_id']} has not started and auction will be rescheduled")
+        raise RetryException()
+
+    # import pdb; pdb.set_trace()
     await run_stage_methods(auction, stages, current_stage)
 
     # update stage fields
