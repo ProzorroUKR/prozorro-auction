@@ -166,15 +166,14 @@ def get_auctions_from_tender(tender):
         auction["start_at"] = convert_datetime(auction["start_at"])
         if auction["start_at"] < get_now():
             logger.info(f"Auction {auction['_id']} has not started and will be rescheduled")
-            auction["stages"] = build_stages(auction)
             auction["current_stage"] = -101
-            auction["timer"] = get_now()
-            yield auction
+            auction["timer"] = None
         else:
-            auction["stages"] = build_stages(auction)
+            # Planning or re-planning auction
             auction["current_stage"] = -1
             auction["timer"] = auction["start_at"]   # for chronograph update
-            yield auction
+        auction["stages"] = build_stages(auction)
+        yield auction
 
 
 def build_stages(auction):

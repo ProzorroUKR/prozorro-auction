@@ -21,15 +21,18 @@ async def schedule_auction(session, auction, tender):
             saved_auction = await read_auction(auction["_id"])
             if saved_auction:
                 current_stage = saved_auction.get("current_stage")
-                # Strange part of code because
-                # If auction get in time current_sage will be -1
-                # And in that place auction will be skipped
+
                 if current_stage is not None and current_stage not in [-101, -1]:
                     logger.info(f"Skipping {auction['_id']} already started at {saved_auction['start_at']}")
                     return
 
                 min_time, max_time = sorted((pytz.utc.localize(saved_auction["start_at"]), auction["start_at"]))
-                if (max_time - min_time).seconds < 1:
+                time_diff = (max_time - min_time).seconds
+                if time_diff < 1:
+                    logger.info(f"Skipping {auction['_id']} already scheduled at {auction['start_at']}")
+                    return
+
+                if time_diff > 1 and current_stage != -101:
                     logger.info(f"Skipping {auction['_id']} already scheduled at {auction['start_at']}")
                     return
 
