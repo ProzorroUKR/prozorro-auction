@@ -145,11 +145,17 @@ def copy_bid_stage_fields(bid, stage):
 
 
 def build_audit_document(auction):
+
+    bidder_map = {
+        "bidder_id": "bidder",
+        "time": "date",
+    }
+
     timeline = {
         "auction_start": {
             "initial_bids": [
                 {
-                    "bidder" if k == "bidder_id" else k: v
+                    bidder_map[k] if k in bidder_map else k: v
                     for k, v in bid.items()
                 }
                 for bid in auction["initial_bids"]
@@ -176,7 +182,7 @@ def build_audit_document(auction):
         if stage["type"] == "pause":
             round_number += 1
             turn = 0
-        elif stage["type"] == "bid":
+        elif stage["type"] == "bids":
             turn += 1
             label = f"round_{round_number}"
             if label not in timeline:
@@ -184,7 +190,7 @@ def build_audit_document(auction):
             timeline[label][f"turn_{turn}"] = dict(
                 amount=stage["amount"],
                 bidder=stage["bidder_id"],
-                time=datetime_to_str(stage["start"])
+                time=datetime_to_str(stage["time"])
             )
             if auction["features"]:
                 timeline[label][f"turn_{turn}"]["amount_features"] = str(stage.get("amount_features"))
