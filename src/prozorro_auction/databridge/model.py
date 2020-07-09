@@ -51,6 +51,8 @@ def get_data_from_tender(tender):
     if "lots" in tender:
         for lot in tender["lots"]:
             start_at = lot.get("auctionPeriod", {}).get("startDate")
+            if tender.get('mode') == 'test':
+                start_at = (get_now() + timedelta(minutes=5)).isoformat(timespec='seconds')
             if start_at is not None:
                 auction = deepcopy(tender_auction)
                 auction["start_at"] = start_at
@@ -78,6 +80,8 @@ def get_data_from_tender(tender):
                 yield auction
     else:
         tender_auction["start_at"] = tender.get("auctionPeriod", {}).get("startDate")
+        if tender.get("mode") == "test":
+            tender_auction["start_at"] = (get_now() + timedelta(minutes=5)).isoformat(timespec='seconds')
         if tender_auction["start_at"] is not None:
             tender_auction["_id"] = tender["id"]
             tender_auction["lot_id"] = None
