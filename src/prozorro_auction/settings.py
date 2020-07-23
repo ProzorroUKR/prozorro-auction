@@ -54,3 +54,4 @@ assert AUCTION_HOST.startswith("http")
 
 PREFIX_NEW_AUCTION = os.getenv("PREFIX_NEW_AUCTION", "")
 
+LATENCY_TIME = os.getenv("LATENCY_TIME", 10 * 60)

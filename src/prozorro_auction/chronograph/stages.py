@@ -8,19 +8,28 @@ from prozorro_auction.chronograph.model import (
     sort_bids, get_label_dict, get_bidder_number, update_auction_results,
     publish_bids_made_in_current_stage, copy_bid_stage_fields, set_auction_bidders_real_names,
 )
+from prozorro_auction.settings import LATENCY_TIME
 import aiohttp
 
 
 async def tick_auction(auction):
+    now = datetime.now()
     current_stage = auction.get("current_stage", -1)
+
     stages = auction.get("stages")
     next_stage_index = current_stage + 1
     if next_stage_index >= len(stages):
         return logger.error(f"Chronograph tries to update {auction['_id']} "
                             f"to a non-existed stage {next_stage_index}")
+
     next_stage = stages[next_stage_index]
-    if next_stage["start"] > datetime.now():
+
+    if next_stage["start"] > now:
         return logger.error(f"Chronograph tries to update {auction['_id']} too early {next_stage['start']}")
+
+    if next_stage["start"] + timedelta(seconds=LATENCY_TIME) < now:
+        auction.update({"current_stage": -101, "results": [], "timer": None})
+        return logger.info(f"Next stage in auction {auction['_id']} has not started and auction will be rescheduled")
 
     await run_stage_methods(auction, stages, current_stage)
 
