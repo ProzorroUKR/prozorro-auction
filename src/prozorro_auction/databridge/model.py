@@ -178,7 +178,8 @@ def get_auctions_from_tender(tender):
 
 
 def build_stages(auction):
-    if auction["mode"] == "quick(mode:fast-forward)":
+    mode = auction["mode"]
+    if mode and mode.endswith("quick(mode:fast-forward)"):
         two_min = five_min = 0
         auction["start_at"] = get_now()
     else:

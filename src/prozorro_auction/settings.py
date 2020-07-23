@@ -52,4 +52,5 @@ assert not AUCTION_HOST.endswith("/")
 assert AUCTION_HOST.startswith("http")
 
 
+PREFIX_NEW_AUCTION = os.getenv("PREFIX_NEW_AUCTION", "")
 

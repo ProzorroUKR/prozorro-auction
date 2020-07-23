@@ -8,12 +8,14 @@ import pytz
 
 
 async def schedule_auction(session, auction, tender):
+
+    mode = auction["mode"]
     try:
         if auction["is_cancelled"]:
             logger.info(f"Cancelling {auction['_id']}")
             await update_auction(auction, insert=False)
 
-        elif auction["mode"] == "quick(mode:no-auction)":
+        elif mode and mode.endswith("quick(mode:no-auction)"):
             await send_auction_results(session, auction, tender["bids"],
                                        request_tender_method=request_tender)  # to handle retries
 
