@@ -1,7 +1,7 @@
-aiohttp>=3.6.2<4
-motor>=2.1.0<3
-python-json-logger>=0.1.10<1
-iso8601>=0.1.12<1
+aiohttp>=3.6.2,<4
+motor>=2.1.0,<3
+python-json-logger>=0.1.10,<1
+iso8601>=0.1.12,<1
 pytz
 pyyaml
 git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.0.8
