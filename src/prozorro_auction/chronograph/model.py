@@ -1,6 +1,6 @@
 from prozorro_auction.settings import logger
 from yaml import safe_dump
-from prozorro_auction.utils import datetime_to_str
+from prozorro_auction.utils import datetime_to_str, get_now
 from fractions import Fraction
 
 
@@ -57,6 +57,7 @@ def update_auction_results(auction):
 def publish_bids_made_in_current_stage(auction):
     current_stage = auction.get("current_stage")
     stage = auction["stages"][current_stage]
+    stage["publish_time"] = get_now()
     bidder_id = stage["bidder_id"]
     if bidder_id is None:
         logger.critical(f"Bidder stage bidder is not set {current_stage}")
@@ -145,11 +146,17 @@ def copy_bid_stage_fields(bid, stage):
 
 
 def build_audit_document(auction):
+
+    bidder_map = {
+        "bidder_id": "bidder",
+        "time": "date",
+    }
+
     timeline = {
         "auction_start": {
             "initial_bids": [
                 {
-                    "bidder" if k == "bidder_id" else k: v
+                    bidder_map[k] if k in bidder_map else k: v
                     for k, v in bid.items()
                 }
                 for bid in auction["initial_bids"]
@@ -176,7 +183,7 @@ def build_audit_document(auction):
         if stage["type"] == "pause":
             round_number += 1
             turn = 0
-        elif stage["type"] == "bid":
+        elif stage["type"] == "bids":
             turn += 1
             label = f"round_{round_number}"
             if label not in timeline:
@@ -184,8 +191,12 @@ def build_audit_document(auction):
             timeline[label][f"turn_{turn}"] = dict(
                 amount=stage["amount"],
                 bidder=stage["bidder_id"],
-                time=datetime_to_str(stage["start"])
+                time=datetime_to_str(stage["publish_time"])
             )
+
+            if stage.get("changed", False):
+                timeline[label][f"turn_{turn}"]["bid_time"] = datetime_to_str(stage["time"])
+
             if auction["features"]:
                 timeline[label][f"turn_{turn}"]["amount_features"] = str(stage.get("amount_features"))
                 timeline[label][f"turn_{turn}"]["coeficient"] = str(stage.get("coeficient"))
