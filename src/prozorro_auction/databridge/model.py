@@ -51,9 +51,6 @@ def get_data_from_tender(tender):
     if "lots" in tender:
         for lot in tender["lots"]:
             start_at = lot.get("auctionPeriod", {}).get("startDate")
-            if tender.get("submissionMethodDetails").endswith("quick(mode:fast-auction)"):
-                start_at = (get_now() + timedelta(
-                    minutes=QUICK_MODE_FAST_AUCTION_START_AFTER)).isoformat(timespec='seconds')
             if start_at is not None:
                 auction = deepcopy(tender_auction)
                 auction["start_at"] = start_at
@@ -81,9 +78,6 @@ def get_data_from_tender(tender):
                 yield auction
     else:
         tender_auction["start_at"] = tender.get("auctionPeriod", {}).get("startDate")
-        if tender.get("submissionMethodDetails").endswith("quick(mode:fast-auction)"):
-            tender_auction["start_at"] = (get_now() + timedelta(
-                minutes=QUICK_MODE_FAST_AUCTION_START_AFTER)).isoformat(timespec='seconds')
         if tender_auction["start_at"] is not None:
             tender_auction["_id"] = tender["id"]
             tender_auction["lot_id"] = None
@@ -184,6 +178,12 @@ def build_stages(auction):
     if mode and mode.endswith("quick(mode:fast-forward)"):
         two_min = five_min = 0
         auction["start_at"] = get_now()
+    elif mode and mode.endswith("quick(mode:fast-auction)"):
+        auction["start_at"] = (get_now() + timedelta(
+            minutes=QUICK_MODE_FAST_AUCTION_START_AFTER)
+        )
+        two_min = 2 * 60
+        five_min = 5 * 60
     else:
         two_min = 2 * 60
         five_min = 5 * 60
