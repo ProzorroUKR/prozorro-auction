@@ -10,7 +10,8 @@ import asyncio
 
 
 async def process_tender_data(session, tender):
-    if tender.get("procurementMethodType") in PROCUREMENT_TYPES:
+    procurement_method_type = tender.get("procurementMethodType")
+    if procurement_method_type in PROCUREMENT_TYPES:
         tasks = []
         if tender["status"] == "active.auction":
             # updating tender data with the fill private and public data
@@ -30,7 +31,7 @@ async def process_tender_data(session, tender):
                 )
         await asyncio.gather(*tasks)
     else:
-        logger.info(f"Skipping {tender['id']} as {tender['procurementMethodType']} not in PROCUREMENT_TYPES")
+        logger.info(f"Skipping {tender['id']} as {procurement_method_type} not in PROCUREMENT_TYPES")
 
 
 async def auction_data_handler(session, items):
