@@ -36,7 +36,7 @@ PROCUREMENT_TYPES = os.environ.get(
     "PROCUREMENT_TYPES",
     "closeFrameworkAgreementUA,closeFrameworkAgreementSelectionUA,"
     "belowThreshold,aboveThresholdEU,aboveThresholdUA,aboveThresholdUA.defense,"
-    "competitiveDialogueEU.stage2,competitiveDialogueUA.stage2,esco"
+    "competitiveDialogueEU.stage2,competitiveDialogueUA.stage2,esco,simple.defense"
 ).split(",")
 
 
