@@ -1,11 +1,23 @@
 from prozorro_auction.constants import ProcurementMethodType
 from prozorro_auction.settings import logger
 from prozorro_auction.api.storage import (
-    read_auction_list, get_auction, insert_auction,
-    update_auction_bid_stage, watch_changed_docs,
+    read_auction_list,
+    get_auction,
+    insert_auction,
+    update_auction_bid_stage,
+    watch_changed_docs,
 )
-from prozorro_auction.api.utils import json_response, json_dumps
-from prozorro_auction.api.model import get_test_auction, get_posted_bid, get_bid_response_data, get_bid_by_bidder_id
+from prozorro_auction.api.utils import (
+    json_response,
+    json_dumps,
+    get_remote_addr,
+)
+from prozorro_auction.api.model import (
+    get_test_auction,
+    get_posted_bid,
+    get_bid_response_data,
+    get_bid_by_bidder_id,
+)
 from prozorro_auction.databridge.model import build_stages
 from aiohttp import web
 from prozorro_auction.utils.base import get_now
@@ -45,9 +57,10 @@ async def get_auction_by_id(request):
 @routes.post('/api/log')
 async def auction_log(request):
     data = await request.json()
-    message = data.pop("MESSAGE", "Auction client log")
+    log_msg = data.pop("MESSAGE", "Auction client log")
     data["SYSLOG_IDENTIFIER"] = "AUCTION_CLIENT"
-    logger.info(message, extra=data)
+    data["REMOTE_ADDR"] = get_remote_addr(request)
+    logger.info(log_msg, extra=data)
     return json_response({"result": "ok"}, status=200)
 
 
@@ -75,21 +88,31 @@ async def post_bid(request):
 
     if auction["procurementMethodType"] == ProcurementMethodType.ESCO.value:
         if posted_bid:
-            log_msg = (f"Bidder {bidder_id} with client_id {client_id} placed bid "
-                       f"with total amount {posted_bid['amountPerformance']}, "
-                       f"yearly payments percentage = {posted_bid['yearlyPaymentsPercentage']}, "
-                       f"contract duraction years = {posted_bid['contractDuration']['years']}, "
-                       f"contract duration days = {posted_bid['contractDuration']['days']} "
-                       f"in {get_now().isoformat()}")  # "let me speak from my heart"
+            log_msg = (
+                f"Bidder {bidder_id} with client_id {client_id} placed bid "
+                f"with total amount {posted_bid['amountPerformance']}, "
+                f"yearly payments percentage = {posted_bid['yearlyPaymentsPercentage']}, "
+                f"contract duraction years = {posted_bid['contractDuration']['years']}, "
+                f"contract duration days = {posted_bid['contractDuration']['days']} "
+                f"in {get_now().isoformat()}"
+            )  # "let me speak from my heart"
         else:
-            log_msg = f"Bidder {bidder_id} with client_id {client_id} canceled bids " \
+            log_msg = (
+                f"Bidder {bidder_id} with client_id {client_id} canceled bids "
                 f"in stage {auction['current_stage']} in {get_now().isoformat()}"
+            )
     else:
         if posted_bid:
             log_msg = f"Bidder {bidder_id} posted bid: {posted_bid['amount']}"
         else:
             log_msg = f"Bidder {bidder_id} cancelled their bid"
-    logger.info(log_msg)
+
+    extra = dict()
+    extra["SYSLOG_IDENTIFIER"] = "AUCTION_WORKER"
+    extra["REMOTE_ADDR"] = get_remote_addr(request)
+    extra["BIDDER_ID"] = bidder_id
+    extra["CLIENT_ID"] = client_id
+    logger.info(log_msg, extra=extra)
 
     resp_data = get_bid_response_data(auction, bid)
     return json_response(resp_data, status=200)
@@ -99,24 +122,35 @@ async def post_bid(request):
 async def check_authorization(request):
     data = await request.json()
     if "bidder_id" in data and "hash" in data:
-        bidder_id, token = data["bidder_id"], data["hash"]
+        bidder_id, hash_value = data["bidder_id"], data["hash"]
         client_id = data.get("client_id")
 
         _id = request.match_info["auction_id"]
         auction = await get_auction(_id, fields=("bids", "stages", "current_stage", "procurementMethodType"))
 
         bid = get_bid_by_bidder_id(auction, bidder_id)
-        if bid["hash"] != token:
+        if bid["hash"] != hash_value:
             raise web.HTTPUnauthorized(text="hash is invalid")
 
         resp_data = get_bid_response_data(auction, bid)
-        logger.info(f"Bidder {bidder_id} from {client_id} has passed check authorization: {resp_data}")
+
+        extra = dict()
+        extra["SYSLOG_IDENTIFIER"] = "AUCTION_WORKER"
+        extra["REMOTE_ADDR"] = get_remote_addr(request)
+        extra["BIDDER_ID"] = bidder_id
+        extra["CLIENT_ID"] = client_id
+        log_msg = (
+            f"Bidder {bidder_id} from {client_id} "
+            f"has passed check authorization: {resp_data}"
+        )
+        logger.info(log_msg, extra=extra)
 
         if "coeficient" in bid:
             resp_data["coeficient"] = str(bid["coeficient"])
 
         if "non_price_cost" in bid:
             resp_data["non_price_cost"] = bid["non_price_cost"]
+
         return json_response(resp_data, status=200)
     else:
         raise web.HTTPUnauthorized(text="bidder_id or hash not provided")
