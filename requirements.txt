@@ -5,6 +5,8 @@ iso8601>=0.1.12,<1
 sentry-sdk>=0.14.4,<1
 pytz
 pyyaml
+python-dateutil==2.6.1
+pytest-asyncio
 git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.1
 git+git://github.com/ProzorroUKR/esculator.git@0.0.2
 git+git://github.com/ProzorroUKR/barbecue.git@0.2
