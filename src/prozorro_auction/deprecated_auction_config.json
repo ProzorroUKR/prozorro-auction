@@ -1,0 +1,14 @@
+{
+  "procurementMethodType": {
+    "closeFrameworkAgreementUA": null,
+    "closeFrameworkAgreementSelectionUA": null,
+    "aboveThresholdEU": null,
+    "aboveThresholdUA": null,
+    "aboveThresholdUA.defense": null,
+    "competitiveDialogueEU.stage2":  null,
+    "competitiveDialogueUA.stage2":  null,
+    "esco": null,
+    "simple.defense": null,
+    "belowThreshold": null
+  }
+}

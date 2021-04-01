@@ -1,6 +1,7 @@
 from prozorro_auction.base_requests import request_tender as base_request_tender
-from prozorro_auction.settings import logger, PREFIX_NEW_AUCTION
+from prozorro_auction.settings import logger
 from prozorro_auction.exceptions import RequestRetryException, SkipException
+from prozorro_auction.deprecated_auction_config_filter import is_tender_processed_by_auction
 import asyncio
 
 
@@ -13,8 +14,8 @@ async def get_tender_document(session, tender):
     )
     tender.update(public_data)
     tender.update(private_data)
-    if not tender.get("submissionMethodDetails", "").startswith(PREFIX_NEW_AUCTION):
-        logger.info(f"Skip processing {tender['id']} as that tender is not for new auction")
+    if not is_tender_processed_by_auction(tender, auction_type='new'):
+        logger.info(f"Skip processing {tender['id']} as that tender is for deprecated auction")
         raise SkipException()
     if "bids" not in tender:
         logger.info(f"Skip processing {tender['id']} as there are no bids")

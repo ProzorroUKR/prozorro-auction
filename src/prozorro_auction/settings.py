@@ -53,8 +53,15 @@ assert AUCTION_HOST.startswith("http")
 QUICK_MODE_FAST_AUCTION_START_AFTER = int(os.getenv("QUICK_MODE_FAST_AUCTION_START_AFTER", 5))
 
 
-PREFIX_NEW_AUCTION = os.getenv("PREFIX_NEW_AUCTION", "")
-
 LATENCY_TIME = os.getenv("LATENCY_TIME", 10 * 60)
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT")
+
+
+def get_deprecated_auction_config_path():
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "deprecated_auction_config.json")
+
+
+DEPRECATED_AUCTION_CONFIG_PATH = os.environ.get(
+    "DEPRECATED_AUCTION_CONFIG_PATH", get_deprecated_auction_config_path()
+)
