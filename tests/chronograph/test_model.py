@@ -1,8 +1,9 @@
-from copy import deepcopy
 import datetime
+import unittest
+
+from copy import deepcopy
 
 from prozorro_auction.chronograph.model import build_audit_document
-import unittest
 
 
 class AuditTestCase(unittest.TestCase):
