@@ -1,10 +1,10 @@
-import uuid
-
 from copy import deepcopy
 from datetime import timedelta
-from barbecue import cooking, calculate_coeficient
-from fractions import Fraction
 
+from prozorro_auction.databridge.importers import (
+    AuctionBidImporterFactory,
+    AuctionType,
+)
 from prozorro_auction.utils import convert_datetime, get_now
 from prozorro_auction.settings import (
     logger,
@@ -43,103 +43,63 @@ def get_data_from_tender(tender):
         for lot in tender["lots"]:
             start_at = lot.get("auctionPeriod", {}).get("startDate")
             if start_at is not None:
-                features = tender.get("features", [])
-                auction = deepcopy(tender_auction)
-                auction["start_at"] = start_at
-                auction["_id"] = generate_auction_id(tender, lot)
-                auction["lot_id"] = lot["id"]
-                auction["is_cancelled"] = is_auction_cancelled(tender, lot)
-                lot_items = get_items(tender, lot)
-                lot_features = filter_lot_features(features, lot, lot_items)
-                auction["items"] = lot_items
-                auction["features"] = lot_features
-                auction["bids"] = import_lot_bids(active_bids, lot, lot_features, features)
-                yield auction
+                yield generate_auction_data(deepcopy(tender_auction), tender, active_bids, start_at, lot)
     else:
         start_at = tender.get("auctionPeriod", {}).get("startDate")
         if start_at is not None:
-            tender_auction["start_at"] = start_at
-            tender_auction["_id"] = generate_auction_id(tender)
-            tender_auction["lot_id"] = None
-            tender_auction["is_cancelled"] = is_auction_cancelled(tender)
-            tender_auction["items"] = get_items(tender)
-            features = tender.get("features", [])
-            tender_auction["features"] = features
-            tender_auction["bids"] = import_tender_bids(active_bids, features)
-            yield tender_auction
+            yield generate_auction_data(tender_auction, tender, active_bids, start_at)
 
 
-def import_tender_bids(active_bids, features):
+def generate_auction_data(auction, tender, active_bids, start_at, lot=None):
     """
-    Get bids data
-
+    :param auction:
+    :param tender:
     :param active_bids:
-    :param features:
+    :param start_at:
+    :param lot:
     :return:
     """
-    bids_data = []
-    for bid in active_bids:
-        parameters = bid.get("parameters")
-        bid_data = import_bid(bid, bid, features, parameters, None, None)
-        bids_data.append(bid_data)
-    return bids_data
+    auction["_id"] = generate_auction_id(tender, lot)
+    auction["start_at"] = start_at
+    auction["lot_id"] = get_lot_id(lot)
+    auction["is_cancelled"] = is_auction_cancelled(tender, lot)
+    auction["items"] = get_items(tender, lot)
+    auction["features"] = get_features(tender, auction["items"], lot)
+    auction["bids"] = get_bids_data(auction, active_bids, lot)
+    return auction
 
 
-def import_lot_bids(active_bids, lot, lot_features, features):
+def get_lot_id(lot=None):
     """
-    Get bids data for each lot value.
+    :param lot:
+    :return:
+    """
+    if lot:
+        return lot["id"]
+    return None
 
+
+def get_bids_data(auction, active_bids, lot=None):
+    """
+    Get bids data.
+
+    :param auction:
     :param active_bids:
-    :param lot_features:
-    :param features:
     :param lot:
     :return:
     """
     bids_data = []
-    lot_feature_codes = {feature["code"] for feature in lot_features}
+    factory = AuctionBidImporterFactory(auction)
     for bid in active_bids:
-        for lot_value in bid["lotValues"]:
-            status = lot_value.get("status", "active")
-            if lot_value["relatedLot"] == lot["id"] and status == "active":
-                lot_parameters = [
-                    parameter for parameter in bid.get("parameters", "")
-                    if parameter["code"] in lot_feature_codes
-                ]
-                bid_data = import_bid(bid, lot_value, features, lot_parameters, None, None)
-                bids_data.append(bid_data)
-    return bids_data
-
-
-def import_bid(bid, bid_value_container, features, parameters, criteria, responses):
-    """
-    Get bid data with additional calculated data.
-
-    :param bid: bid dict
-    :param bid_value_container: lot values item dict in case of multilot or bid dict otherwise
-    :param features: features list
-    :param parameters: parameters list
-    :param criteria: criteria list
-    :param responses: requirement responses list
-    :return:
-    """
-    bid_data = dict(
-        id=bid["id"],
-        hash=uuid.uuid4().hex,
-        name=bid["tenderers"][0]["name"] if "tenderers" in bid else None,
-        date=bid_value_container["date"],
-        value=bid_value_container["value"],
-    )
-    if parameters:
-        bid_data["parameters"] = parameters
-        bid_data["coeficient"] = str(calculate_coeficient(features, parameters))
-        if "amountPerformance" in bid_value_container["value"]:  # esco
-            amount = str(Fraction(bid_value_container["value"]["amountPerformance"]))
-            reverse = True
+        importer = factory.create(bid)
+        if lot:
+            for lot_value in bid["lotValues"]:
+                status = lot_value.get("status", "active")
+                if lot_value["relatedLot"] == lot["id"] and status == "active":
+                    bids_data.append(importer.import_auction_bid_data(lot_value))
         else:
-            amount = bid_value_container["value"]["amount"]
-            reverse = False
-        bid_data["amount_features"] = str(cooking(amount, features, parameters, reverse=reverse))
-    return bid_data
+            bids_data.append(importer.import_auction_bid_data())
+    return bids_data
 
 
 def get_items(tender, lot=None):
@@ -152,11 +112,30 @@ def get_items(tender, lot=None):
     """
     items = filter_items_keys(tender.get("items", []))
     if lot:
-        return list(filter(
-            lambda item: item.get("relatedLot") == lot["id"],
-            items
-        ))
+        return list(filter(lambda item: item.get("relatedLot") == lot["id"], items))
     return items
+
+
+def get_features(tender, items, lot=None):
+    """
+    Get features list
+
+    :param tender:
+    :param lot:
+    :return:
+    """
+    features = tender.get("features", [])
+    if lot:
+        return list(filter(
+            lambda feature: any([
+                feature["featureOf"] == "tenderer",
+                feature["featureOf"] == "lot" and feature["relatedItem"] == lot["id"],
+                feature["featureOf"] == "item" and feature["relatedItem"] in {
+                    item["id"] for item in items
+                }
+            ]), features
+        ))
+    return features
 
 
 def generate_auction_id(tender, lot=None):
@@ -231,9 +210,11 @@ def get_auction_type(tender):
     :param tender:
     :return:
     """
+    if tender.get("awardCriteria", "") == "lifeCycleCost":
+        return AuctionType.LCC.value
     if tender.get("features", []):
-        return "meat"
-    return "default"
+        return AuctionType.MEAT.value
+    return AuctionType.DEFAULT.value
 
 
 def is_auction_cancelled(tender, lot=None):
@@ -247,26 +228,6 @@ def is_auction_cancelled(tender, lot=None):
     if lot:
         return is_tender_cancelled or lot.get("status") != "active"
     return is_tender_cancelled
-
-
-def filter_lot_features(features, lot, items):
-    """
-    Filter features related to lot or lot items
-
-    :param features:
-    :param items:
-    :param lot:
-    :return:
-    """
-    return list(filter(
-        lambda feature:
-        feature["featureOf"] == "tenderer"
-        or feature["featureOf"] == "lot" and feature["relatedItem"] == lot["id"]
-        or feature["featureOf"] == "item" and feature["relatedItem"] in {
-            item["id"] for item in items
-        },
-        features
-    ))
 
 
 def copy_bid_tokens(source, dst):

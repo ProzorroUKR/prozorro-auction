@@ -93,71 +93,6 @@ test_item = {
     },
 }
 
-test_tender_data = {
-    "id": uuid.uuid4().hex,
-    "title": u"футляри до державних нагород",
-    "mainProcurementCategory": "goods",
-    "procuringEntity": test_procuring_entity,
-    "value": {
-        "amount": 500,
-        "currency": u"UAH"
-    },
-    "minimalStep": {
-        "amount": 35,
-        "currency": u"UAH"
-    },
-    "items": [deepcopy(test_item)],
-    "procurementMethodType": "belowThreshold",
-    "milestones": test_milestones,
-}
-
-test_tender_data.update(
-    {
-        "enquiryPeriod": {
-            "startDate": (now - timedelta(days=14)).isoformat(),
-            "endDate": (now - timedelta(days=7)).isoformat(),
-        },
-        "tenderPeriod": {
-            "startDate": (now - timedelta(days=7)).isoformat(),
-            "endDate": (now).isoformat()
-        },
-        "auctionPeriod": {
-            "startDate": (now).isoformat()
-        },
-    }
-)
-
-test_features_item_id = uuid.uuid4().hex
-test_features = [
-    {
-        "code": "OCDS-123454-AIR-INTAKE",
-        "featureOf": "item",
-        "relatedItem": test_features_item_id,
-        "title": "Потужність всмоктування",
-        "title_en": "Air Intake",
-        "description": "Ефективна потужність всмоктування пилососа, в ватах (аероватах)",
-        "enum": [{"value": 0.1, "title": "До 1000 Вт"}, {"value": 0.15, "title": "Більше 1000 Вт"}],
-    },
-    {
-        "code": "OCDS-123454-YEARS",
-        "featureOf": "tenderer",
-        "title": "Років на ринку",
-        "title_en": "Years trading",
-        "description": "Кількість років, які організація учасник працює на ринку",
-        "enum": [
-            {"value": 0.05, "title": "До 3 років"},
-            {"value": 0.1, "title": "Більше 3 років, менше 5 років"},
-            {"value": 0.15, "title": "Більше 5 років"},
-        ],
-    },
-]
-
-test_features_tender_data = test_tender_data.copy()
-test_features_item = test_features_tender_data["items"][0].copy()
-test_features_item["id"] = test_features_item_id
-test_features_tender_data["items"] = [test_features_item]
-test_features_tender_data["features"] = test_features
-
 test_bids = [
     {
         "id": uuid.uuid4().hex,
@@ -181,25 +116,93 @@ test_bids = [
     },
 ]
 
-test_parameters_bids = deepcopy(test_bids)
-test_parameters_bids[0]["parameters"] = [
+test_tender_data = {
+    "id": uuid.uuid4().hex,
+    "title": u"футляри до державних нагород",
+    "mainProcurementCategory": "goods",
+    "procuringEntity": test_procuring_entity,
+    "value": {
+        "amount": 500,
+        "currency": u"UAH"
+    },
+    "minimalStep": {
+        "amount": 35,
+        "currency": u"UAH"
+    },
+    "items": [deepcopy(test_item)],
+    "procurementMethodType": "belowThreshold",
+    "milestones": test_milestones,
+    "bids": test_bids,
+}
+
+test_tender_data.update(
+    {
+        "enquiryPeriod": {
+            "startDate": (now - timedelta(days=14)).isoformat(),
+            "endDate": (now - timedelta(days=7)).isoformat(),
+        },
+        "tenderPeriod": {
+            "startDate": (now - timedelta(days=7)).isoformat(),
+            "endDate": (now).isoformat()
+        },
+        "auctionPeriod": {
+            "startDate": (now).isoformat()
+        },
+    }
+)
+
+test_item_features_id = uuid.uuid4().hex
+test_features = [
+    {
+        "code": "OCDS-123454-AIR-INTAKE",
+        "featureOf": "item",
+        "relatedItem": test_item_features_id,
+        "title": "Потужність всмоктування",
+        "title_en": "Air Intake",
+        "description": "Ефективна потужність всмоктування пилососа, в ватах (аероватах)",
+        "enum": [{"value": 0.1, "title": "До 1000 Вт"}, {"value": 0.15, "title": "Більше 1000 Вт"}],
+    },
+    {
+        "code": "OCDS-123454-YEARS",
+        "featureOf": "tenderer",
+        "title": "Років на ринку",
+        "title_en": "Years trading",
+        "description": "Кількість років, які організація учасник працює на ринку",
+        "enum": [
+            {"value": 0.05, "title": "До 3 років"},
+            {"value": 0.1, "title": "Більше 3 років, менше 5 років"},
+            {"value": 0.15, "title": "Більше 5 років"},
+        ],
+    },
+]
+
+test_tender_data_features = deepcopy(test_tender_data)
+test_item_features = deepcopy(test_item)
+test_item_features["id"] = test_item_features_id
+test_tender_data_features["items"] = [test_item_features]
+test_tender_data_features["features"] = test_features
+
+test_bids_parameters = deepcopy(test_bids)
+test_bids_parameters[0]["parameters"] = [
     {
         "code": i["code"],
         "value": 0.1
     }
-    for i in test_features_tender_data["features"]
+    for i in test_tender_data_features["features"]
 ]
-test_parameters_bids[1]["parameters"] = [
+test_bids_parameters[1]["parameters"] = [
     {
         "code": i["code"],
         "value": 0.15
     }
-    for i in test_features_tender_data["features"]
+    for i in test_tender_data_features["features"]
 ]
+test_tender_data_features["bids"] = test_bids_parameters
 
 test_lots = [
     {
         "id": uuid.uuid4().hex,
+        "status": "active",
         "title": "lot title",
         "description": "lot description",
         "value": test_tender_data["value"],
@@ -207,6 +210,7 @@ test_lots = [
     },
     {
         "id": uuid.uuid4().hex,
+        "status": "active",
         "title": "lot title 2",
         "description": "lot description 2",
         "value": test_tender_data["value"],
@@ -214,16 +218,21 @@ test_lots = [
     }
 ]
 
+for test_lot in test_lots:
+    test_lot.update(
+        {
+            "auctionPeriod": {
+                "startDate": (now).isoformat()
+            },
+        }
+    )
+
 test_items_multilot = [
     deepcopy(test_item),
     deepcopy(test_item),
 ]
 test_items_multilot[0]["relatedLot"] = test_lots[0]["id"]
 test_items_multilot[1]["relatedLot"] = test_lots[1]["id"]
-
-test_tender_data_multilot = deepcopy(test_tender_data)
-test_tender_data_multilot["lots"] = test_lots
-test_tender_data_multilot["items"] = test_items_multilot
 
 test_bids_multilot = [
     {
@@ -257,10 +266,260 @@ test_bids_multilot = [
                     "currency": "UAH",
                     "valueAddedTaxIncluded": True
                 }
+            },
+            {
+                "relatedLot": test_lots[0]["id"],
+                "date": get_now().isoformat(),
+                "status": "active",
+                "value": {
+                    "amount": 479,
+                    "currency": "UAH",
+                    "valueAddedTaxIncluded": True
+                }
             }
         ],
     },
 ]
+
+test_tender_data_multilot = deepcopy(test_tender_data)
+test_tender_data_multilot["lots"] = test_lots
+test_tender_data_multilot["items"] = test_items_multilot
+test_tender_data_multilot["bids"] = test_bids_multilot
+
+
+test_criteria_lcc = [
+    {
+        "title": "Витрати, пов’язані з користуванням",
+        "description": "Для розрахунку витрат, пов’язаних з користуванням, замовник визначає у тендерній документації одиницю виміру життєвого циклу та зазначає вартість споживання електроенергії та інших ресурсів (наприклад поточні ціни на бензин або дані від Національної комісії, що здійснює державне регулювання у сферах енергетики та комунальних послуг щодо вартості електроенергії, тощо)",
+        "source": "tenderer",
+        "classification": {
+            "scheme": "LCC",
+            "id": "CRITERION.OTHER.LIFE_CYCLE_COST.COST_OF_USE"
+        },
+        "relatesTo": "tender",
+        "legislation": [
+            {
+                "version": "2020-09-28",
+                "identifier": {
+                    "id": "1894",
+                    "legalName": "Наказ Мінекономіки \"Про затвердження Примірної методики визначення вартості життєвого циклу\"",
+                    "uri": "https://me.gov.ua/legislativeacts/Detail?lang=uk-UA&id=32140d03-d5eb-4988-8790-6d60d1c84a93"
+                },
+                "type": "NATIONAL_LEGISLATION",
+                "article": "2.6"
+            }
+        ],
+        "requirementGroups": [
+            {
+                "description": "Учасником процедури закупівлі надається інформація щодо",
+                "requirements": [
+                    {
+                        "id": uuid.uuid4().hex,
+                        "title": "Характеристик предмета закупівлі в частині споживання ресурсу під час користування предметом закупівлі протягом визначеного замовником періоду оцінки життєвого циклу",
+                        "dataType": "number"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Витрати, пов’язані з обслуговуванням",
+        "description": "Для розрахунку витрат, пов’язаних з обслуговуванням, замовник у тендерній документації серед переліку інформації, що надає учасник, може запитати інформацію щодо вартості обслуговування, ремонту та/або заміни складових предмета закупівлі за одиницю виміру життєвого циклу, а також документи від виробника про характеристики предмета закупівлі",
+        "source": "tenderer",
+        "classification": {
+            "scheme": "LCC",
+            "id": "CRITERION.OTHER.LIFE_CYCLE_COST.MAINTENANCE_COST"
+        },
+        "relatesTo": "tender",
+        "legislation": [
+            {
+                "version": "2020-09-28",
+                "identifier": {
+                    "id": "1894",
+                    "legalName": "Наказ Мінекономіки \"Про затвердження Примірної методики визначення вартості життєвого циклу\"",
+                    "uri": "https://me.gov.ua/legislativeacts/Detail?lang=uk-UA&id=32140d03-d5eb-4988-8790-6d60d1c84a93"
+                },
+                "type": "NATIONAL_LEGISLATION",
+                "article": "2.7"
+            }
+        ],
+        "requirementGroups": [
+            {
+                "description": "Учасником процедури закупівлі надається інформація щодо",
+                "requirements": [
+                    {
+                        "id": uuid.uuid4().hex,
+                        "title": "Під час розрахунку вартості витрат, пов’язаних з обслуговуванням предмета закупівлі, застосовуються показники вартості обслуговування за одиницю виміру життєвого циклу або вартості заміни складових предмета закупівлі за одиницю виміру життєвого циклу, надані учасниками процедури закупівлі у тендерній пропозиції",
+                        "dataType": "number"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Витрати, пов’язані з завершенням користування",
+        "description": "Для розрахунку витрат, пов’язаних з завершенням користування, замовник у тендерній документації серед переліку інформації, що надає учасник процедури закупівлі, може запитати інформацію щодо вартості демонтажу, утилізації, переробки та інших витрат",
+        "source": "tenderer",
+        "classification": {
+            "scheme": "LCC",
+            "id": "CRITERION.OTHER.LIFE_CYCLE_COST.END_OF_LIFE_COST"
+        },
+        "relatesTo": "tender",
+        "legislation": [
+            {
+                "version": "2020-09-28",
+                "identifier": {
+                    "id": "1894",
+                    "legalName": "Наказ Мінекономіки \"Про затвердження Примірної методики визначення вартості життєвого циклу\"",
+                    "uri": "https://me.gov.ua/legislativeacts/Detail?lang=uk-UA&id=32140d03-d5eb-4988-8790-6d60d1c84a93"
+                },
+                "type": "NATIONAL_LEGISLATION",
+                "article": "2.8"
+            }
+        ],
+        "requirementGroups": [
+            {
+                "description": "Учасником процедури закупівлі надається інформація щодо",
+                "requirements": [
+                    {
+                        "id": uuid.uuid4().hex,
+                        "title": "??",
+                        "dataType": "number"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "title": "Витрати, пов’язані з захистом навколишнього середовища",
+        "description": "Замовник додатково для розрахунку вартості життєвого циклу може використовувати параметри витрат, пов’язаних з захистом навколишнього середовища (вартість екологічних витрат)",
+        "source": "tenderer",
+        "classification": {
+            "scheme": "LCC",
+            "id": "CRITERION.OTHER.LIFE_CYCLE_COST.ECOLOGICAL_COST"
+        },
+        "relatesTo": "tender",
+        "legislation": [
+            {
+                "version": "2020-09-28",
+                "identifier": {
+                    "id": "1894",
+                    "legalName": "Наказ Мінекономіки \"Про затвердження Примірної методики визначення вартості життєвого циклу\"",
+                    "uri": "https://me.gov.ua/legislativeacts/Detail?lang=uk-UA&id=32140d03-d5eb-4988-8790-6d60d1c84a93"
+                },
+                "type": "NATIONAL_LEGISLATION",
+                "article": "2.9"
+            }
+        ],
+        "requirementGroups": [
+            {
+                "description": "Учасником процедури закупівлі надається інформація щодо",
+                "requirements": [
+                    {
+                        "id": uuid.uuid4().hex,
+                        "title": "Для розрахунку вартості витрат, пов’язаних з захистом навколишнього середовища (вартість екологічних витрат) у формулі зазначаються сума податків та зборів, які нараховуються за викиди в атмосферне повітря окремих забруднюючих речовин, коефіцієнт викидів CO2 під час користування предметом закупівлі тощо",
+                        "dataType": "number"
+                    }
+                ]
+            }
+        ]
+    }
+]
+
+test_resposes_lcc = [
+    {
+        "value": "10",
+        "description": "response to CRITERION.OTHER.LIFE_CYCLE_COST.COST_OF_USE",
+        "evidences": [
+            {
+                "relatedDocument": {
+                    "id": uuid.uuid4().hex,
+                    "title": "name.doc"
+                },
+                "type": "document",
+                "id": uuid.uuid4().hex,
+                "title": "Requirement response"
+            }
+        ],
+        "id": uuid.uuid4().hex,
+        "requirement": {
+            "id": test_criteria_lcc[0]["requirementGroups"][0]["requirements"][0]["id"],
+            "title": "Учасник процедури закупівлі не є особою, до якої застосовано санкцію у вигляді заборони на здійснення у неї публічних закупівель товарів, робіт і послуг згідно із Законом України \"Про санкції\""
+        },
+        "title": "Requirement response"
+    },
+    {
+        "value": "20",
+        "description": "response to CRITERION.OTHER.LIFE_CYCLE_COST.MAINTENANCE_COST",
+        "evidences": [
+            {
+                "relatedDocument": {
+                    "id": uuid.uuid4().hex,
+                    "title": "name.doc"
+                },
+                "type": "document",
+                "id": uuid.uuid4().hex,
+                "title": "Requirement response"
+            }
+        ],
+        "id": uuid.uuid4().hex,
+        "requirement": {
+            "id": test_criteria_lcc[1]["requirementGroups"][0]["requirements"][0]["id"],
+            "title": "Учасник процедури закупівлі не є особою, до якої застосовано санкцію у вигляді заборони на здійснення у неї публічних закупівель товарів, робіт і послуг згідно із Законом України \"Про санкції\""
+        },
+        "title": "Requirement response"
+    },
+    {
+        "value": "30",
+        "description": "response to CRITERION.OTHER.LIFE_CYCLE_COST.END_OF_LIFE_COST",
+        "evidences": [
+            {
+                "relatedDocument": {
+                    "id": uuid.uuid4().hex,
+                    "title": "name.doc"
+                },
+                "type": "document",
+                "id": uuid.uuid4().hex,
+                "title": "Requirement response"
+            }
+        ],
+        "id": uuid.uuid4().hex,
+        "requirement": {
+            "id": test_criteria_lcc[2]["requirementGroups"][0]["requirements"][0]["id"],
+            "title": "Учасник процедури закупівлі не є особою, до якої застосовано санкцію у вигляді заборони на здійснення у неї публічних закупівель товарів, робіт і послуг згідно із Законом України \"Про санкції\""
+        },
+        "title": "Requirement response"
+    },
+    {
+        "value": "40",
+        "description": "response to CRITERION.OTHER.LIFE_CYCLE_COST.ECOLOGICAL_COST",
+        "evidences": [
+            {
+                "relatedDocument": {
+                    "id": uuid.uuid4().hex,
+                    "title": "name.doc"
+                },
+                "type": "document",
+                "id": uuid.uuid4().hex,
+                "title": "Requirement response"
+            }
+        ],
+        "id": uuid.uuid4().hex,
+        "requirement": {
+            "id": test_criteria_lcc[3]["requirementGroups"][0]["requirements"][0]["id"],
+            "title": "Учасник процедури закупівлі не є особою, до якої застосовано санкцію у вигляді заборони на здійснення у неї публічних закупівель товарів, робіт і послуг згідно із Законом України \"Про санкції\""
+        },
+        "title": "Requirement response"
+    },
+]
+
+test_tender_data_lcc = deepcopy(test_tender_data)
+test_tender_data_lcc["criteria"] = test_criteria_lcc
+
+test_bids_lcc = deepcopy(test_bids)
+test_bids_lcc[0]["requirementResponses"] = test_resposes_lcc
+test_bids_lcc[1]["requirementResponses"] = test_resposes_lcc
+test_tender_data_lcc["bids"] = test_bids_lcc
 
 
 class AsyncMock(MagicMock):
