@@ -8,7 +8,7 @@ from prozorro_auction.exceptions import SkipException
 
 
 @pytest.mark.asyncio
-async def test_get_tender_document_without_flag():
+async def test_get_tender_document_for_new_auction():
     session = MagicMock()
     tender_data = deepcopy(test_tender_data)
     tender_data["id"] = "test_id"
@@ -30,7 +30,7 @@ async def test_get_tender_document_without_flag():
         auction_response,
     ])
 
-    with patch("prozorro_auction.databridge.requests.PREFIX_NEW_AUCTION", ""):
+    with patch("prozorro_auction.databridge.requests.is_tender_processed_by_auction", lambda *args, **kwargs: True):
         tender = {"id": tender_data["id"]}
         tender_data["submissionMethodDetails"] = "quick"
 
@@ -40,7 +40,7 @@ async def test_get_tender_document_without_flag():
 
 
 @pytest.mark.asyncio
-async def test_get_tender_document_with_flag(caplog):
+async def test_get_tender_document_for_deprecated_auction(caplog):
     session = MagicMock()
     tender_data = deepcopy(test_tender_data)
     tender_data["id"] = "test_id"
@@ -65,17 +65,11 @@ async def test_get_tender_document_with_flag(caplog):
     ])
 
     tender = {"id": tender_data["id"]}
-    with patch("prozorro_auction.databridge.requests.PREFIX_NEW_AUCTION", "new_auction"):
+    with patch("prozorro_auction.databridge.requests.is_tender_processed_by_auction", lambda *args, **kwargs: False):
         with pytest.raises(SkipException):
             await get_tender_document(session, tender)
-            assert caplog.text == f"Skip processing {tender['id']} as that tender is not for new auction"
+            assert caplog.text == f"Skip processing {tender['id']} as that tender is for deprecated auction"
 
-        tender_data["submissionMethodDetails"] = "new_auction"
-
-        tender = await get_tender_document(session, tender)
-        tender_data["bids"] = test_bids
-        assert tender["submissionMethodDetails"] == "new_auction"
-        assert tender_data == tender
 
 
 @pytest.mark.asyncio
