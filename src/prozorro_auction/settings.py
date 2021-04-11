@@ -3,6 +3,8 @@ from base64 import b64encode
 import pytz
 import os
 
+from prozorro_auction.constants import PROCUREMENT_METHOD_TYPES_DEFAULT
+
 API_PORT = int(os.environ.get("API_PORT", 8000))
 TZ = pytz.timezone(os.environ.get("TZ", "Europe/Kiev"))
 USER_AGENT = os.environ.get("USER_AGENT", "Auction 2.0")
@@ -32,12 +34,7 @@ DS_HEADERS = {
 }
 
 
-PROCUREMENT_TYPES = os.environ.get(
-    "PROCUREMENT_TYPES",
-    "closeFrameworkAgreementUA,closeFrameworkAgreementSelectionUA,"
-    "belowThreshold,aboveThresholdEU,aboveThresholdUA,aboveThresholdUA.defense,"
-    "competitiveDialogueEU.stage2,competitiveDialogueUA.stage2,esco,simple.defense"
-).split(",")
+PROCUREMENT_TYPES = os.environ.get("PROCUREMENT_TYPES", "").split(",") or PROCUREMENT_METHOD_TYPES_DEFAULT
 
 
 # replace defaults from crawler.settings

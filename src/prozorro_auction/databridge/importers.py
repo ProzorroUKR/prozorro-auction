@@ -6,7 +6,7 @@ from typing import Optional
 
 from barbecue import calculate_coeficient, cooking
 
-from prozorro_auction.databridge.constants import AuctionType, LCC_CLASSIFICATION_SCHEME
+from prozorro_auction.constants import AuctionType, CriterionClassificationScheme
 
 
 class AuctionAbstractBidImporter(ABC):
@@ -125,25 +125,25 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
         value_container = value_container if value_container else self._bid
         bid_data = super(AuctionLCCBidImporter, self).import_auction_bid_data(value_container=value_container)
         bid_data["responses"] = self._responses
-        supplement = self._calculate_supplement()
-        bid_data["supplement"] = supplement
-        bid_data["amount_weighted"] = self._calculate_amount_weighted(value_container, supplement)
+        life_cycle_cost = self._calculate_life_cycle_cost()
+        bid_data["life_cycle_cost"] = life_cycle_cost
+        bid_data["amount_weighted"] = self._calculate_amount_weighted(value_container, life_cycle_cost)
         return bid_data
 
     def _get_responses(self):
         return self._bid.get("requirementResponses")
 
-    def _calculate_supplement(self) -> float:
-        supplement = 0
+    def _calculate_life_cycle_cost(self) -> float:
+        life_cycle_cost = 0
         for response in self._responses:
             requirement = response.get("requirement", {})
             requirement_id = requirement.get("id")
             criterion = self._get_criterion_by_requirement_id(requirement_id)
             if criterion:
                 classification = criterion.get("classification", {})
-                if classification.get("scheme") == LCC_CLASSIFICATION_SCHEME:
-                    supplement += float(response.get("value"))
-        return supplement
+                if classification.get("scheme") == CriterionClassificationScheme.LCC.value:
+                    life_cycle_cost += float(response.get("value"))
+        return life_cycle_cost
 
 
     def _get_criterion_by_requirement_id(self, requirement_id):
@@ -153,8 +153,8 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
                     if requirement.get("id") == requirement_id:
                         return criterion
 
-    def _calculate_amount_weighted(self, value_container: dict, supplement: float) -> float:
-        return value_container["value"]["amount"] + supplement
+    def _calculate_amount_weighted(self, value_container: dict, life_cycle_cost: float) -> float:
+        return value_container["value"]["amount"] + life_cycle_cost
 
 
 class AuctionDefaultBidImporterBuilder(object):

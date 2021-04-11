@@ -1,21 +1,30 @@
-from prozorro_auction.settings import logger
 from yaml import safe_dump
-from prozorro_auction.utils import datetime_to_str, get_now
 from fractions import Fraction
+
+from prozorro_auction.settings import logger
+from prozorro_auction.utils import datetime_to_str, get_now
+from prozorro_auction.constants import AuctionType
 
 
 def sort_bids(bids):
-    is_esco = any("amountPerformance" in b["value"] for b in bids)
-    with_features = any(b.get("amount_features") for b in bids)
-    if with_features:
+    is_esco = is_esco_bids(bids)
+    auction_type = get_bids_auction_type(bids)
+    if auction_type == AuctionType.MEAT:
         def get_amount(b):
             return Fraction(b["amount_features"])
-    elif is_esco:
-        def get_amount(b):
-            return Fraction(b["value"]["amountPerformance"])
+    elif auction_type == AuctionType.LCC:
+        if is_esco:
+            raise NotImplementedError()
+        else:
+            def get_amount(b):
+                return b["amount_weighted"]
     else:
-        def get_amount(b):
-            return b["value"]["amount"]
+        if is_esco:
+            def get_amount(b):
+                return Fraction(b["value"]["amountPerformance"])
+        else:
+            def get_amount(b):
+                return b["value"]["amount"]
     result = sorted(
         bids,
         key=lambda b: (
@@ -25,6 +34,36 @@ def sort_bids(bids):
         reverse=not is_esco
     )
     return result
+
+
+def get_bid_auction_type(bid):
+    if bid.get("amount_features"):
+        return AuctionType.MEAT
+    elif bid.get("amount_weighted"):
+        return AuctionType.LCC
+    else:
+        return AuctionType.DEFAULT
+
+
+def get_bids_auction_type(bids):
+    auction_types = list(map(get_bid_auction_type, bids))
+    auction_types_priority = [
+        AuctionType.MEAT,
+        AuctionType.LCC,
+        AuctionType.DEFAULT,
+    ]
+    return next(
+        auction_type for auction_type in auction_types_priority
+        if auction_type in auction_types_priority
+    )
+
+
+def is_esco_bid(bid):
+    return "amountPerformance" in bid["value"]
+
+
+def is_esco_bids(bids):
+    return any(is_esco_bid(bid) for bid in bids)
 
 
 def get_label_dict(n):
@@ -71,12 +110,19 @@ def publish_bids_made_in_current_stage(auction):
                     # update private fields
                     bid["date"] = bid_stage_items.pop("time")  # we just can't be consistent on field names
                     bid["value"].update(bid_stage_items)
-                    if auction["features"]:
-                        if "amountPerformance" in bid["value"]:  # esco
-                            amount_features = Fraction(bid["value"]['amountPerformance']) * Fraction(bid["coeficient"])
+                    if auction["auction_type"] == AuctionType.MEAT.value:
+                        coeficient = Fraction(bid["coeficient"])
+                        if is_esco_bid(bid):
+                            amount_features = Fraction(bid["value"]['amountPerformance']) * coeficient
                         else:
-                            amount_features = Fraction(bid["value"]['amount']) / Fraction(bid["coeficient"])
+                            amount_features = Fraction(bid["value"]['amount']) / coeficient
                         bid['amount_features'] = str(amount_features)
+                    elif auction["auction_type"] == AuctionType.LCC.value:
+                        if is_esco_bid(bid):
+                            raise NotImplementedError()
+                        else:
+                            amount_weighted = bid["value"]['amount'] + bid["life_cycle_cost"]
+                            bid['amount_weighted'] = amount_weighted
                     # update public stage fields
                     copy_bid_stage_fields(bid, stage)
                     stage["changed"] = True
@@ -97,7 +143,8 @@ def _build_bidder_object(bid):
         bidder=bid["id"],
         time=datetime_to_str(bid["date"])
     )
-    if "amountPerformance" in bid["value"]:  # esco
+    is_esco = is_esco_bid(bid)
+    if is_esco:
         result.update(
             amount=str(Fraction(bid["value"]["amountPerformance"])),
             contractDuration={
@@ -111,10 +158,18 @@ def _build_bidder_object(bid):
             amount=bid["value"]["amount"]
         )
 
-    if "amount_features" in bid:
+    auction_type = get_bid_auction_type(bid)
+    if auction_type == AuctionType.MEAT:
         result.update(
             amount_features=bid["amount_features"],
             coeficient=bid["coeficient"],
+        )
+    elif auction_type == AuctionType.LCC:
+        if is_esco:
+            raise NotImplementedError()
+        result.update(
+            amount_weighted=bid["amount_weighted"],
+            life_cycle_cost=bid["life_cycle_cost"],
         )
     return result
 
@@ -124,24 +179,30 @@ def copy_bid_stage_fields(bid, stage):
         bidder_id=bid["id"],
         time=bid["date"],
     )
-    for f in ("amount_features", "coeficient"):
+
+    meat_fields = ("amount_features", "coeficient")
+    lcc_fields = ("amount_weighted", "life_cycle_cost")
+    for f in meat_fields + lcc_fields:
         if f in bid:
             fields[f] = bid[f]
 
     bid_value = bid["value"]
-    for f in ("amount", "yearlyPaymentsPercentage", "annualCostsReduction"):  # amount and esco fields
+
+    bid_value_fields = ("amount",)
+    bid_value_esco_fields = ("yearlyPaymentsPercentage", "annualCostsReduction")
+    for f in bid_value_fields + bid_value_esco_fields:
         if f in bid_value:
             fields[f] = bid_value[f]
 
-    if "amountPerformance" in bid["value"]:  # esco "amountPerformance" is shown as "amount" in the round data
+    if is_esco_bid(bid):  # esco "amountPerformance" is shown as "amount" in the round data
         fields["amount"] = str(Fraction(bid["value"]["amountPerformance"]))
 
-    if "contractDuration" in bid_value:  # esco
-        duration = bid_value["contractDuration"]
-        fields.update(
-            contractDurationDays=duration["days"],
-            contractDurationYears=duration["years"],
-        )
+        if "contractDuration" in bid_value:
+            duration = bid_value["contractDuration"]
+            fields.update(
+                contractDurationDays=duration["days"],
+                contractDurationYears=duration["years"],
+            )
     stage.update(fields)
 
 
@@ -197,9 +258,14 @@ def build_audit_document(auction):
             if stage.get("changed", False):
                 timeline[label][f"turn_{turn}"]["bid_time"] = datetime_to_str(stage["time"])
 
-            if auction["features"]:
+            if auction["auction_type"] == AuctionType.MEAT.value:
                 timeline[label][f"turn_{turn}"]["amount_features"] = str(stage.get("amount_features"))
                 timeline[label][f"turn_{turn}"]["coeficient"] = str(stage.get("coeficient"))
+
+            if auction["auction_type"] == AuctionType.LCC.value:
+                timeline[label][f"turn_{turn}"]["amount_weighted"] = stage.get("amount_weighted")
+                timeline[label][f"turn_{turn}"]["life_cycle_cost"] = stage.get("life_cycle_cost")
+
     file_data = safe_dump(audit, default_flow_style=False, encoding="utf-8", allow_unicode=True)
     file_name = f"audit_{auction['_id']}.yaml"
     return file_name, file_data

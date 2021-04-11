@@ -135,7 +135,7 @@ class ImportBidLCCTestCase(unittest.TestCase):
             "date",
             "value",
             "responses",
-            "supplement",
+            "life_cycle_cost",
             "amount_weighted",
         )
 
@@ -148,12 +148,12 @@ class ImportBidLCCTestCase(unittest.TestCase):
 
         self.assertTrue(set(result.keys()).issubset(self.expected_keys))
 
-        expected_supplement = 100.0
+        expected_life_cycle_cost = 100.0
 
         self.assertEqual(result["id"], bid["id"])
         self.assertEqual(result["name"], bid["tenderers"][0]["name"])
         self.assertEqual(result["date"], bid["date"])
         self.assertEqual(result["value"], bid["value"])
         self.assertEqual(result["responses"], bid["requirementResponses"])
-        self.assertEqual(result["supplement"], expected_supplement)
-        self.assertEqual(result["amount_weighted"], bid["value"]["amount"] + expected_supplement)
+        self.assertEqual(result["life_cycle_cost"], expected_life_cycle_cost)
+        self.assertEqual(result["amount_weighted"], bid["value"]["amount"] + expected_life_cycle_cost)
