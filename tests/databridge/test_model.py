@@ -19,6 +19,7 @@ from tests.base import (
     test_tender_data,
     test_tender_data_multilot,
     test_tender_data_features,
+    test_tender_data_lcc,
 )
 
 
@@ -50,6 +51,7 @@ class GetDataFromTenderTestCase(unittest.TestCase):
             "minimalStepPercentage",
             "fundingKind",
             "yearlyPaymentsPercentageRange",
+            "criteria",
         )
 
         expected_item_keys = (
@@ -125,40 +127,6 @@ class GetDataFromTenderTestCase(unittest.TestCase):
             ))
             self.assert_auction_bid_fields(bid_result, bid)
 
-    def test_get_data_meat(self):
-        tender = deepcopy(test_tender_data_features)
-
-        results = list(get_data_from_tender(tender))
-
-        self.assert_auction_keys(results)
-        self.assertEqual(len(results), 1)
-
-        result = results[0]
-        self.assert_auction_fields(result, tender)
-        self.assertEqual(result["auction_type"], "meat")
-        self.assertEqual(result["features"], tender["features"])
-        self.assertEqual(len(result["bids"]), 2)
-        for bid_result in result["bids"]:
-            bid = next(filter(
-                lambda bid: bid["id"] == bid_result["id"],
-                tender["bids"]
-            ))
-            self.assert_auction_bid_fields(bid_result, bid)
-            self.assertEqual(bid_result["parameters"], bid["parameters"])
-            expected_coeficient = str(calculate_coeficient(
-                tender["features"],
-                bid["parameters"]
-            ))
-            self.assertEqual(bid_result["coeficient"], expected_coeficient)
-            expected_amount_features = str(cooking(
-                bid["value"]["amount"],
-                tender["features"],
-                bid["parameters"],
-                reverse=False
-            ))
-            self.assertEqual(bid_result["amount_features"], expected_amount_features)
-
-
     def test_get_data_default_multilot(self):
         tender = deepcopy(test_tender_data_multilot)
 
@@ -193,6 +161,62 @@ class GetDataFromTenderTestCase(unittest.TestCase):
                     bid["lotValues"]
                 ))
                 self.assert_auction_multilot_bid_fields(bid_result, bid, lot_value)
+
+    def test_get_data_meat(self):
+        tender = deepcopy(test_tender_data_features)
+
+        results = list(get_data_from_tender(tender))
+
+        self.assert_auction_keys(results)
+        self.assertEqual(len(results), 1)
+
+        result = results[0]
+        self.assert_auction_fields(result, tender)
+        self.assertEqual(result["auction_type"], "meat")
+        self.assertEqual(result["features"], tender["features"])
+        self.assertEqual(len(result["bids"]), 2)
+        for bid_result in result["bids"]:
+            bid = next(filter(
+                lambda bid: bid["id"] == bid_result["id"],
+                tender["bids"]
+            ))
+            self.assert_auction_bid_fields(bid_result, bid)
+            self.assertEqual(bid_result["parameters"], bid["parameters"])
+            expected_coeficient = str(calculate_coeficient(
+                tender["features"],
+                bid["parameters"]
+            ))
+            self.assertEqual(bid_result["coeficient"], expected_coeficient)
+            expected_amount_features = str(cooking(
+                bid["value"]["amount"],
+                tender["features"],
+                bid["parameters"],
+                reverse=False
+            ))
+            self.assertEqual(bid_result["amount_features"], expected_amount_features)
+
+    def test_get_data_lcc(self):
+        tender = deepcopy(test_tender_data_lcc)
+
+        results = list(get_data_from_tender(tender))
+
+        self.assert_auction_keys(results)
+        self.assertEqual(len(results), 1)
+
+        result = results[0]
+        self.assert_auction_fields(result, tender)
+        self.assertEqual(result["auction_type"], "lcc")
+        self.assertEqual(result["features"], [])
+        self.assertEqual(len(result["criteria"]), 4)
+        self.assertEqual(result["criteria"], tender["criteria"])
+        self.assertEqual(len(result["bids"]), 2)
+        for bid_result in result["bids"]:
+            bid = next(filter(
+                lambda bid: bid["id"] == bid_result["id"],
+                tender["bids"]
+            ))
+            self.assert_auction_bid_fields(bid_result, bid)
+            self.assertEqual(bid_result["responses"], bid["requirementResponses"])
 
 
 class GenerateLotAuctionIdTestCase(unittest.TestCase):

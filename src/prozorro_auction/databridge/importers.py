@@ -1,17 +1,12 @@
 import uuid
 
 from abc import ABC, abstractmethod
-from enum import Enum
 from fractions import Fraction
 from typing import Optional
 
 from barbecue import calculate_coeficient, cooking
 
-
-class AuctionType(Enum):
-    DEFAULT = "default"
-    MEAT = "meat"
-    LCC = "lcc"
+from prozorro_auction.databridge.constants import AuctionType, LCC_CLASSIFICATION_SCHEME
 
 
 class AuctionAbstractBidImporter(ABC):
@@ -111,6 +106,15 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
     Create auction bid data for LCC auction.
     """
 
+    def __init__(self, bid: dict, **kwargs):
+        """
+        :param bid: bid data
+        :param features: features data list
+        """
+        super(AuctionLCCBidImporter, self).__init__(bid, **kwargs)
+        self._criteria = kwargs.get("criteria", None)
+        self._responses = self._get_responses()
+
     def import_auction_bid_data(self, value_container: Optional[dict] = None) -> dict:
         """
         Create auction bid data for LCC auction.
@@ -120,8 +124,37 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
         """
         value_container = value_container if value_container else self._bid
         bid_data = super(AuctionLCCBidImporter, self).import_auction_bid_data(value_container=value_container)
-        bid_data["amount_weighted"] = value_container["value"]["amount"]
+        bid_data["responses"] = self._responses
+        supplement = self._calculate_supplement()
+        bid_data["supplement"] = supplement
+        bid_data["amount_weighted"] = self._calculate_amount_weighted(value_container, supplement)
         return bid_data
+
+    def _get_responses(self):
+        return self._bid.get("requirementResponses")
+
+    def _calculate_supplement(self) -> float:
+        supplement = 0
+        for response in self._responses:
+            requirement = response.get("requirement", {})
+            requirement_id = requirement.get("id")
+            criterion = self._get_criterion_by_requirement_id(requirement_id)
+            if criterion:
+                classification = criterion.get("classification", {})
+                if classification.get("scheme") == LCC_CLASSIFICATION_SCHEME:
+                    supplement += float(response.get("value"))
+        return supplement
+
+
+    def _get_criterion_by_requirement_id(self, requirement_id):
+        for criterion in self._criteria:
+            for group in criterion.get("requirementGroups", []):
+                for requirement in group.get("requirements", []):
+                    if requirement.get("id") == requirement_id:
+                        return criterion
+
+    def _calculate_amount_weighted(self, value_container: dict, supplement: float) -> float:
+        return value_container["value"]["amount"] + supplement
 
 
 class AuctionDefaultBidImporterBuilder(object):
@@ -141,14 +174,21 @@ class AuctionMEATBidImporterBuilder(object):
 
     def _build_meat_kwargs(self, bid: dict) -> dict:
         features = self._auction["features"]
-        parameters = bid.get("parameters", None)
-        return dict(features=features, parameters=parameters)
+        return dict(features=features)
 
 
 class AuctionLCCBidImporterBuilder(object):
 
+    def __init__(self, auction: dict) -> None:
+        self._auction = auction
+
     def __call__(self, bid: dict) -> AuctionLCCBidImporter:
-        return AuctionLCCBidImporter(bid)
+        importer_kwargs = self._build_lcc_kwargs(bid)
+        return AuctionLCCBidImporter(bid, **importer_kwargs)
+
+    def _build_lcc_kwargs(self, bid: dict) -> dict:
+        criteria = self._auction["criteria"]
+        return dict(criteria=criteria)
 
 
 class AuctionBidImporterFactory(object):
@@ -163,7 +203,7 @@ class AuctionBidImporterFactory(object):
         self._builders = {
             AuctionType.DEFAULT: AuctionDefaultBidImporterBuilder(),
             AuctionType.MEAT: AuctionMEATBidImporterBuilder(auction),
-            AuctionType.LCC: AuctionLCCBidImporterBuilder(),
+            AuctionType.LCC: AuctionLCCBidImporterBuilder(auction),
         }
 
     def create(self, bid: dict) -> AuctionAbstractBidImporter:

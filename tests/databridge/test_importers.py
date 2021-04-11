@@ -71,7 +71,7 @@ class ImportBidMEATTestCase(unittest.TestCase):
             "amount_features",
         )
 
-    def test_bid_parameters(self):
+    def test_bid(self):
         tender = deepcopy(test_tender_data_features)
         features = tender["features"]
         bid = tender["bids"][0]
@@ -95,7 +95,7 @@ class ImportBidMEATTestCase(unittest.TestCase):
         self.assertEqual(result["coeficient"], expected_coeficient)
         self.assertEqual(result["amount_features"], expected_amount_features)
 
-    def test_bid_parameters_esco(self):
+    def test_bid_esco(self):
         tender = deepcopy(test_tender_data_features)
         features = tender["features"]
         bid = tender["bids"][0]
@@ -134,21 +134,26 @@ class ImportBidLCCTestCase(unittest.TestCase):
             "name",
             "date",
             "value",
+            "responses",
+            "supplement",
             "amount_weighted",
         )
 
-    def test_bid_lcc(self):
+    def test_bid(self):
         tender = deepcopy(test_tender_data_lcc)
         criteria = tender["criteria"]
         bid = tender["bids"][0]
-        responses = bid["requirementResponses"]
 
-        result = AuctionLCCBidImporter(bid).import_auction_bid_data()
+        result = AuctionLCCBidImporter(bid, criteria=criteria).import_auction_bid_data()
 
         self.assertTrue(set(result.keys()).issubset(self.expected_keys))
+
+        expected_supplement = 100.0
 
         self.assertEqual(result["id"], bid["id"])
         self.assertEqual(result["name"], bid["tenderers"][0]["name"])
         self.assertEqual(result["date"], bid["date"])
         self.assertEqual(result["value"], bid["value"])
-        self.assertEqual(result["amount_weighted"], bid["value"]["amount"])
+        self.assertEqual(result["responses"], bid["requirementResponses"])
+        self.assertEqual(result["supplement"], expected_supplement)
+        self.assertEqual(result["amount_weighted"], bid["value"]["amount"] + expected_supplement)

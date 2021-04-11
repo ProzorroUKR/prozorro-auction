@@ -514,6 +514,7 @@ test_resposes_lcc = [
 ]
 
 test_tender_data_lcc = deepcopy(test_tender_data)
+test_tender_data_lcc["awardCriteria"] = "lifeCycleCost"
 test_tender_data_lcc["criteria"] = test_criteria_lcc
 
 test_bids_lcc = deepcopy(test_bids)

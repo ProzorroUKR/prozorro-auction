@@ -1,11 +1,9 @@
 from copy import deepcopy
 from datetime import timedelta
 
-from prozorro_auction.databridge.importers import (
-    AuctionBidImporterFactory,
-    AuctionType,
-)
 from prozorro_auction.utils import convert_datetime, get_now
+from prozorro_auction.databridge.importers import AuctionBidImporterFactory
+from prozorro_auction.databridge.constants import AuctionType, LCC_CLASSIFICATION_SCHEME
 from prozorro_auction.settings import (
     logger,
     TEST_MODE,
@@ -65,6 +63,7 @@ def generate_auction_data(auction, tender, active_bids, start_at, lot=None):
     auction["is_cancelled"] = is_auction_cancelled(tender, lot)
     auction["items"] = get_items(tender, lot)
     auction["features"] = get_features(tender, auction["items"], lot)
+    auction["criteria"] = get_criteria(tender, lot)
     auction["bids"] = get_bids_data(auction, active_bids, lot)
     return auction
 
@@ -136,6 +135,17 @@ def get_features(tender, items, lot=None):
             ]), features
         ))
     return features
+
+
+def get_criteria(tender, lot=None):
+    criteria = []
+    for criterion in tender.get("criteria", []):
+        if criterion.get("relatesTo") == "lot" and criterion.get("relatedItem") != lot["id"]:
+            break
+        classification = criterion.get("classification", {})
+        if classification.get("scheme") == LCC_CLASSIFICATION_SCHEME:
+            criteria.append(criterion)
+    return criteria
 
 
 def generate_auction_id(tender, lot=None):
