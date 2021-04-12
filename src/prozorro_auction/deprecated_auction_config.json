@@ -1,14 +1,14 @@
 {
   "procurementMethodType": {
-    "closeFrameworkAgreementUA": null,
-    "closeFrameworkAgreementSelectionUA": null,
-    "aboveThresholdEU": null,
-    "aboveThresholdUA": null,
-    "aboveThresholdUA.defense": null,
-    "competitiveDialogueEU.stage2":  null,
-    "competitiveDialogueUA.stage2":  null,
-    "esco": null,
-    "simple.defense": null,
-    "belowThreshold": null
+    "closeFrameworkAgreementUA": "2020-01-01T00:00:00+03:00",
+    "closeFrameworkAgreementSelectionUA": "2020-01-01T00:00:00+03:00",
+    "aboveThresholdEU": "2020-01-01T00:00:00+03:00",
+    "aboveThresholdUA": "2020-01-01T00:00:00+03:00",
+    "aboveThresholdUA.defense": "2020-01-01T00:00:00+03:00",
+    "competitiveDialogueEU.stage2":  "2020-01-01T00:00:00+03:00",
+    "competitiveDialogueUA.stage2":  "2020-01-01T00:00:00+03:00",
+    "esco": "2020-01-01T00:00:00+03:00",
+    "simple.defense": "2020-01-01T00:00:00+03:00",
+    "belowThreshold": "2020-01-01T00:00:00+03:00"
   }
 }

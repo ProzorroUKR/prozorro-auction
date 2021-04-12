@@ -91,6 +91,15 @@ def get_posted_bid(auction, bid, hash_value, data):
     return posted_bid
 
 
+def get_stage_auction_type(stage):
+    if stage.get("amount_features"):
+        return AuctionType.MEAT
+    elif stage.get("amount_weighted"):
+        return AuctionType.LCC
+    else:
+        return AuctionType.DEFAULT
+
+
 def _validate_amount(auction, auction_stage, bid, data):
     if "amount" not in data:
         raise ValidationError('Bid amount is required')
@@ -99,23 +108,24 @@ def _validate_amount(auction, auction_stage, bid, data):
     if amount <= 0.0 and amount != -1:  # -1 means cancelling this stage bid (should be deleted from db)
         raise ValidationError('Too low value')
 
-    if auction["auction_type"] == AuctionType.DEFAULT.value:
+    auction_type = get_stage_auction_type(auction_stage)
+    if auction_type == AuctionType.DEFAULT:
         minimal_bid = auction_stage['amount']
         max_allowed = minimal_bid - auction['minimalStep']['amount']
         max_allowed = float(str(max_allowed))  # convert floats to more likely values, ex 0.19999999999999996 to 0.2
         if amount > max_allowed:
             raise ValidationError(u'Too high value')
-    elif auction["auction_type"] == AuctionType.MEAT.value:
+    elif auction_type == AuctionType.MEAT:
         minimal_bid = auction_stage['amount_features']
         minimal = Fraction(minimal_bid) * Fraction(bid["coeficient"])
         minimal -= Fraction(auction['minimalStep']['amount'])
         if amount > minimal:
             raise ValidationError(u'Too high value')
-    elif auction["auction_type"] == AuctionType.LCC.value:
+    elif auction_type == AuctionType.LCC:
         pass
         #  TODO: add validation
     else:
-        message = f"Auction type {auction['auction_type']} is not supported"
+        message = f"Auction type {auction_type.value} is not supported"
         raise ValidationError(message)
 
     return amount
@@ -170,21 +180,22 @@ def _validate_esco_fields(auction, auction_stage, bid, data):
     #  - "max_bid + minimalStepPercentage" - with features
     #  - "max_bid + max_bid * minimalStepPercentage" - without features
 
-    if auction["auction_type"] == AuctionType.DEFAULT.value:
+    auction_type = get_stage_auction_type(auction_stage)
+    if auction_type == AuctionType.DEFAULT:
         max_bid = Fraction(auction_stage['amount'])
         if amount < max_bid + max_bid * Fraction(auction['minimalStepPercentage']):
             message = 'Amount NPV: Too low value'
             raise ValidationError(message)
-    elif auction["auction_type"] == AuctionType.MEAT.value:
+    elif auction_type == AuctionType.MEAT:
         max_bid = Fraction(auction_stage['amount_features']) * Fraction(bid["coeficient"])
         if amount < max_bid + Fraction(auction['minimalStepPercentage']):
             message = 'Amount NPV: Too low value'
             raise ValidationError(message)
-    elif auction["auction_type"] == AuctionType.LCC.value:
-        message = f"Auction type {auction['auction_type']} is not supported for esco procurement method type"
+    elif auction_type == AuctionType.LCC:
+        message = f"Auction type {auction_type.value} is not supported for esco procurement method type"
         raise ValidationError(message)
     else:
-        message = f"Auction type {auction['auction_type']} is not supported"
+        message = f"Auction type {auction_type.value} is not supported"
         raise ValidationError(message)
 
     esco_bid_fields = dict(
