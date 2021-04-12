@@ -131,6 +131,7 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
         return bid_data
 
     def _get_responses(self):
+        # TODO: filter responses
         return self._bid.get("requirementResponses")
 
     def _calculate_life_cycle_cost(self) -> float:
