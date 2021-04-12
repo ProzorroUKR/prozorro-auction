@@ -34,7 +34,10 @@ DS_HEADERS = {
 }
 
 
-PROCUREMENT_TYPES = os.environ.get("PROCUREMENT_TYPES", "").split(",") or PROCUREMENT_METHOD_TYPES_DEFAULT
+if "PROCUREMENT_TYPES" in os.environ:
+    PROCUREMENT_TYPES = os.environ.get("PROCUREMENT_TYPES").split(",")
+else:
+    PROCUREMENT_TYPES = PROCUREMENT_METHOD_TYPES_DEFAULT
 
 
 # replace defaults from crawler.settings
