@@ -54,7 +54,7 @@ def get_bids_auction_type(bids):
     ]
     return next(
         auction_type for auction_type in auction_types_priority
-        if auction_type in auction_types_priority
+        if auction_type in auction_types
     )
 
 
