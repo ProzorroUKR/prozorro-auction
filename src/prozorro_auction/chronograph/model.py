@@ -2,7 +2,7 @@ from yaml import safe_dump
 from fractions import Fraction
 
 from prozorro_auction.settings import logger
-from prozorro_auction.utils import datetime_to_str, get_now
+from prozorro_auction.utils import datetime_to_str, get_now, copy_dict
 from prozorro_auction.constants import AuctionType
 
 
@@ -278,11 +278,14 @@ def get_doc_id_from_filename(documents, file_name):
 
 
 def _bid_patch_fields(bid):
-    value_fields = ("amount", "contractDuration", "yearlyPaymentsPercentage")
     result = {
         "date": datetime_to_str(bid["date"]),
-        "value": {k: v for k, v in bid["value"].items() if k in value_fields}
+        "value": copy_dict(bid["value"], ("amount", "contractDuration", "yearlyPaymentsPercentage")),
     }
+    if "amount_weighted" in bid:
+        result["weightedValue"] = {
+            "amount": bid["amount_weighted"]
+        }
     return result
 
 

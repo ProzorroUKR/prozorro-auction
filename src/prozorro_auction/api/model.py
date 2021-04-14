@@ -122,8 +122,11 @@ def _validate_amount(auction, auction_stage, bid, data):
         if amount > minimal:
             raise ValidationError(u'Too high value')
     elif auction_type == AuctionType.LCC:
-        pass
-        #  TODO: add validation
+        minimal_bid = auction_stage['amount_weighted']
+        minimal = Fraction(minimal_bid) - Fraction(bid["life_cycle_cost"])
+        minimal -= Fraction(auction['minimalStep']['amount'])
+        if amount > minimal:
+            raise ValidationError(u'Too high value')
     else:
         message = f"Auction type {auction_type.value} is not supported"
         raise ValidationError(message)
@@ -211,7 +214,10 @@ def _validate_esco_fields(auction, auction_stage, bid, data):
 
 def get_bid_response_data(auction, bid):
     current_stage = auction.get("current_stage", 0)
-    auction_stage = auction["stages"][current_stage]
+    try:
+        auction_stage = auction["stages"][current_stage]
+    except IndexError:
+        return {}
 
     if auction["procurementMethodType"] == ProcurementMethodType.ESCO.value:
         bid_data = None
