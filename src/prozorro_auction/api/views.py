@@ -115,8 +115,8 @@ async def check_authorization(request):
         if "coeficient" in bid:
             resp_data["coeficient"] = str(bid["coeficient"])
 
-        if "life_cycle_cost" in bid:
-            resp_data["life_cycle_cost"] = str(bid["life_cycle_cost"])
+        if "non_price_cost" in bid:
+            resp_data["non_price_cost"] = str(bid["non_price_cost"])
         return json_response(resp_data, status=200)
     else:
         raise web.HTTPUnauthorized(text="bidder_id or hash not provided")

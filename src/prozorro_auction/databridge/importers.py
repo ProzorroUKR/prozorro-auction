@@ -125,17 +125,17 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
         value_container = value_container if value_container else self._bid
         bid_data = super(AuctionLCCBidImporter, self).import_auction_bid_data(value_container=value_container)
         bid_data["responses"] = self._responses
-        life_cycle_cost = self._calculate_life_cycle_cost()
-        bid_data["life_cycle_cost"] = life_cycle_cost
-        bid_data["amount_weighted"] = self._calculate_amount_weighted(value_container, life_cycle_cost)
+        non_price_cost = self._calculate_non_price_cost()
+        bid_data["non_price_cost"] = non_price_cost
+        bid_data["amount_weighted"] = self._calculate_amount_weighted(value_container, non_price_cost)
         return bid_data
 
     def _get_responses(self):
         # TODO: filter responses
         return self._bid.get("requirementResponses")
 
-    def _calculate_life_cycle_cost(self) -> float:
-        life_cycle_cost = 0
+    def _calculate_non_price_cost(self) -> float:
+        non_price_cost = 0
         for response in self._responses:
             requirement = response.get("requirement", {})
             requirement_id = requirement.get("id")
@@ -143,8 +143,8 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
             if criterion:
                 classification = criterion.get("classification", {})
                 if classification.get("scheme") == CriterionClassificationScheme.LCC.value:
-                    life_cycle_cost += float(response.get("value"))
-        return life_cycle_cost
+                    non_price_cost += float(response.get("value"))
+        return non_price_cost
 
 
     def _get_criterion_by_requirement_id(self, requirement_id):
@@ -154,8 +154,8 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
                     if requirement.get("id") == requirement_id:
                         return criterion
 
-    def _calculate_amount_weighted(self, value_container: dict, life_cycle_cost: float) -> float:
-        return value_container["value"]["amount"] + life_cycle_cost
+    def _calculate_amount_weighted(self, value_container: dict, non_price_cost: float) -> float:
+        return value_container["value"]["amount"] + non_price_cost
 
 
 class AuctionDefaultBidImporterBuilder(object):

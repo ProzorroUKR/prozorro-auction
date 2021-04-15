@@ -182,7 +182,7 @@ test_auction_with_stages_lcc = [
     {
         'amount': 200,
         'amount_weighted': 300,
-        'life_cycle_cost': 100,
+        'non_price_cost': 100,
         'bidder_id': 'a',
         'start': '2019-08-12T14:54:52+03:00',
         'time': '2019-08-12T14:54:00+03:00',
@@ -192,7 +192,7 @@ test_auction_with_stages_lcc = [
     {
         'amount': 300,
         'amount_weighted': 400,
-        'life_cycle_cost': 100,
+        'non_price_cost': 100,
         'bidder_id': 'b',
         'start': '2019-08-12T14:55:52+03:00',
         'time': '2019-08-12T14:55:00+03:00',
@@ -203,7 +203,7 @@ test_auction_with_stages_lcc = [
     {
         'amount': 200,
         'amount_weighted': 300,
-        'life_cycle_cost': 100,
+        'non_price_cost': 100,
         'bidder_id': 'a',
         'start': '2019-08-12T14:57:52+03:00',
         'time': '2019-08-12T14:57:00+03:00',
@@ -213,7 +213,7 @@ test_auction_with_stages_lcc = [
     {
         'amount': 300,
         'amount_weighted': 400,
-        'life_cycle_cost': 100,
+        'non_price_cost': 100,
         'bidder_id': 'b',
         'start': '2019-08-12T14:58:52+03:00',
         'time': '2019-08-12T14:58:00+03:00',
@@ -224,7 +224,7 @@ test_auction_with_stages_lcc = [
     {
         'amount': 200,
         'amount_weighted': 300,
-        'life_cycle_cost': 100,
+        'non_price_cost': 100,
         'bidder_id': 'a',
         'start': '2019-08-12T14:59:52+03:00',
         'time': '2019-08-12T14:59:00+03:00',
@@ -234,7 +234,7 @@ test_auction_with_stages_lcc = [
     {
         'amount': 300,
         'amount_weighted': 400,
-        'life_cycle_cost': 100,
+        'non_price_cost': 100,
         'bidder_id': 'b',
         'start': '2019-08-12T15:00:52+03:00',
         'time': '2019-08-12T15:00:00+03:00',
@@ -277,7 +277,7 @@ test_bids_lcc = [
             "amount": 200
         },
         "amount_weighted": 300,
-        "life_cycle_cost": 100,
+        "non_price_cost": 100,
     },
     {
         "id": "b",
@@ -287,7 +287,7 @@ test_bids_lcc = [
             "amount": 300
         },
         "amount_weighted": 400,
-        "life_cycle_cost": 100,
+        "non_price_cost": 100,
     }
 ]
 
@@ -483,12 +483,12 @@ timeline:
     - amount: 200
       amount_weighted: 300
       bidder: a
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T14:53:52+03:00'
     - amount: 300
       amount_weighted: 400
       bidder: b
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T14:53:52+03:00'
     time: '2019-08-12T15:02:52+03:00'
   round_1:
@@ -496,38 +496,38 @@ timeline:
       amount: 200
       amount_weighted: 300
       bidder: a
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T14:55:00+03:00'
     turn_2:
       amount: 300
       amount_weighted: 400
       bidder: b
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T14:56:00+03:00'
   round_2:
     turn_1:
       amount: 200
       amount_weighted: 300
       bidder: a
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T14:58:00+03:00'
     turn_2:
       amount: 300
       amount_weighted: 400
       bidder: b
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T14:59:00+03:00'
   round_3:
     turn_1:
       amount: 200
       amount_weighted: 300
       bidder: a
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T15:00:00+03:00'
     turn_2:
       amount: 300
       amount_weighted: 400
       bidder: b
-      life_cycle_cost: 100
+      non_price_cost: 100
       time: '2019-08-12T15:01:00+03:00'
 """

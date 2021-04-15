@@ -121,7 +121,7 @@ def publish_bids_made_in_current_stage(auction):
                         if is_esco_bid(bid):
                             raise NotImplementedError()
                         else:
-                            amount_weighted = bid["value"]['amount'] + bid["life_cycle_cost"]
+                            amount_weighted = bid["value"]['amount'] + bid["non_price_cost"]
                             bid['amount_weighted'] = amount_weighted
                     # update public stage fields
                     copy_bid_stage_fields(bid, stage)
@@ -169,7 +169,7 @@ def _build_bidder_object(bid):
             raise NotImplementedError()
         result.update(
             amount_weighted=bid["amount_weighted"],
-            life_cycle_cost=bid["life_cycle_cost"],
+            non_price_cost=bid["non_price_cost"],
         )
     return result
 
@@ -181,7 +181,7 @@ def copy_bid_stage_fields(bid, stage):
     )
 
     meat_fields = ("amount_features", "coeficient")
-    lcc_fields = ("amount_weighted", "life_cycle_cost")
+    lcc_fields = ("amount_weighted", "non_price_cost")
     for f in meat_fields + lcc_fields:
         if f in bid:
             fields[f] = bid[f]
@@ -264,7 +264,7 @@ def build_audit_document(auction):
 
             if auction["auction_type"] == AuctionType.LCC.value:
                 timeline[label][f"turn_{turn}"]["amount_weighted"] = stage.get("amount_weighted")
-                timeline[label][f"turn_{turn}"]["life_cycle_cost"] = stage.get("life_cycle_cost")
+                timeline[label][f"turn_{turn}"]["non_price_cost"] = stage.get("non_price_cost")
 
     file_data = safe_dump(audit, default_flow_style=False, encoding="utf-8", allow_unicode=True)
     file_name = f"audit_{auction['_id']}.yaml"

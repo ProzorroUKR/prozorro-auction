@@ -123,7 +123,7 @@ def _validate_amount(auction, auction_stage, bid, data):
             raise ValidationError(u'Too high value')
     elif auction_type == AuctionType.LCC:
         minimal_bid = auction_stage['amount_weighted']
-        minimal = Fraction(minimal_bid) - Fraction(bid["life_cycle_cost"])
+        minimal = Fraction(minimal_bid) - Fraction(bid["non_price_cost"])
         minimal -= Fraction(auction['minimalStep']['amount'])
         if amount > minimal:
             raise ValidationError(u'Too high value')
