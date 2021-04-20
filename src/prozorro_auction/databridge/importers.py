@@ -132,7 +132,7 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
 
     def _get_responses(self):
         # TODO: filter responses
-        return self._bid.get("requirementResponses")
+        return self._bid.get("requirementResponses", [])
 
     def _calculate_non_price_cost(self) -> float:
         non_price_cost = 0
