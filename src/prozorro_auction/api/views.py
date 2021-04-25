@@ -1,3 +1,4 @@
+from prozorro_auction.constants import ProcurementMethodType
 from prozorro_auction.settings import logger
 from prozorro_auction.api.storage import (
     read_auction_list, get_auction, insert_auction,
@@ -72,7 +73,7 @@ async def post_bid(request):
     bid = get_bid_by_bidder_id(auction, bidder_id)
     # updated "auction" value is important to build response using "get_bid_response_data" (at least for esco)
 
-    if auction["procurementMethodType"] == "esco":
+    if auction["procurementMethodType"] == ProcurementMethodType.ESCO.value:
         if posted_bid:
             log_msg = (f"Bidder {bidder_id} with client_id {client_id} placed bid "
                        f"with total amount {posted_bid['amountPerformance']}, "
@@ -113,6 +114,9 @@ async def check_authorization(request):
 
         if "coeficient" in bid:
             resp_data["coeficient"] = str(bid["coeficient"])
+
+        if "non_price_cost" in bid:
+            resp_data["non_price_cost"] = bid["non_price_cost"]
         return json_response(resp_data, status=200)
     else:
         raise web.HTTPUnauthorized(text="bidder_id or hash not provided")

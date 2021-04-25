@@ -1,8 +1,9 @@
+import unittest
+
 from unittest.mock import patch, Mock, call
 
 from prozorro_auction.utils import get_now
 from prozorro_auction.settings import TZ
-import unittest
 
 
 class UtilsCase(unittest.TestCase):

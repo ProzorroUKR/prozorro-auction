@@ -2,9 +2,10 @@ import pytest
 from unittest.mock import patch, MagicMock
 from copy import deepcopy
 
-from tests.base import AsyncMock, test_tender_data, test_bids
 from prozorro_auction.databridge.requests import get_tender_document
 from prozorro_auction.exceptions import SkipException
+
+from tests.base import AsyncMock, test_tender_data, test_bids
 
 
 @pytest.mark.asyncio
@@ -76,6 +77,7 @@ async def test_get_tender_document_for_deprecated_auction(caplog):
 async def test_get_tender_document_without_bids(caplog):
     session = MagicMock()
     tender_data = deepcopy(test_tender_data)
+    tender_data.pop("bids")
     tender_response = MagicMock(
         status=200,
         json=AsyncMock(

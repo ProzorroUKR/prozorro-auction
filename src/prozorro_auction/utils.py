@@ -16,3 +16,7 @@ def datetime_to_str(dt):
     if isinstance(dt, str):
         return dt
     return pytz.utc.localize(dt).astimezone(TZ).isoformat()
+
+
+def copy_dict(original, keys):
+    return {key: value for key, value in original.items() if key in keys}
