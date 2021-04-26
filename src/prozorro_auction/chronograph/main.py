@@ -75,9 +75,9 @@ async def chronograph_loop():
                     )
                 ):
                     message = (
-                        f"Auction {auction['_id']} processing finished at {current_ts}, time - {processing_time}"
-                        f"While it's locked only by {auction['timer']} ({timer_time})"
-                        "This may lead to inconsistency of data!"
+                        f"Auction {auction['_id']} processing finished at {current_ts}, time - {processing_time}. "
+                        f"While it's locked only by {auction['timer']} ({timer_time}). "
+                        f"This may lead to inconsistency of data!"
                     )
                     logger.critical(message)
                 else:
