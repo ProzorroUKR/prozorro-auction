@@ -69,7 +69,7 @@ async def chronograph_loop():
                 timer_time = pytz.utc.localize(timer).astimezone(TZ)
                 if (
                     current_ts >= timer_time and not (
-                        auction["timer"] is None and processing_time < POSTPONE_ANNOUNCEMENT_TD
+                        auction["timer"] is None and processing_time < POSTPONE_ANNOUNCEMENT_TD.total_seconds()
                         # it's been announcement stage
                         # that takes longer due to its communicates with API CDB
                     )
