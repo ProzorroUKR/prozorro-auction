@@ -1,5 +1,5 @@
 from prozorro_auction.chronograph.storage import increase_and_read_expired_timer, update_auction
-from prozorro_auction.chronograph.stages import tick_auction
+from prozorro_auction.chronograph.stages import tick_auction, POSTPONE_ANNOUNCEMENT_TD
 from prozorro_auction.exceptions import RetryException
 from prozorro_auction.settings import logger, TZ
 from prozorro_auction.utils import get_now
@@ -67,7 +67,13 @@ async def chronograph_loop():
                 processing_time = time() - _start_time
                 current_ts = get_now()
                 timer_time = pytz.utc.localize(timer).astimezone(TZ)
-                if current_ts >= timer_time:
+                if (
+                    current_ts >= timer_time and not (
+                        auction["timer"] is None and processing_time < POSTPONE_ANNOUNCEMENT_TD
+                        # it's been announcement stage
+                        # that takes longer due to its communicates with API CDB
+                    )
+                ):
                     message = (
                         f"Auction {auction['_id']} processing finished at {current_ts}, time - {processing_time}"
                         f"While it's locked only by {auction['timer']} ({timer_time})"

@@ -102,6 +102,9 @@ async def on_start_stage_pre_announcement(auction):
     pass   # i don't want run long running tasks here, as it would delay finishing of the last bid stage
 
 
+POSTPONE_ANNOUNCEMENT_TD = timedelta(seconds=2 * 60)
+
+
 async def on_start_stage_announcement(auction):
     """
     1 upload audit document
@@ -110,7 +113,7 @@ async def on_start_stage_announcement(auction):
     """
     # increase timer as this task usually takes more than 2 sec
     await update_auction(
-        {"_id": auction["_id"], "timer": get_now() + timedelta(seconds=60)},
+        {"_id": auction["_id"], "timer": get_now() + POSTPONE_ANNOUNCEMENT_TD},
         update_date=False
     )
 
