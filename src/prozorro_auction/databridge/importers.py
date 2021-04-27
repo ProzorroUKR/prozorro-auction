@@ -6,7 +6,7 @@ from typing import Optional
 
 from barbecue import calculate_coeficient, cooking
 
-from prozorro_auction.constants import AuctionType, CriterionClassificationScheme
+from prozorro_auction.constants import AuctionType, CRITERIA_LCC
 
 
 class AbstractAuctionBidImporter(ABC):
@@ -148,7 +148,7 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
             criterion = self._get_criterion_by_requirement_id(requirement_id)
             if criterion:
                 classification = criterion.get("classification", {})
-                if classification.get("scheme") == CriterionClassificationScheme.LCC.value:
+                if classification.get("id") in CRITERIA_LCC:
                     non_price_cost += float(response.get("value"))
         return non_price_cost
 

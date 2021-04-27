@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from prozorro_auction.utils import convert_datetime, get_now, copy_fields
 from prozorro_auction.databridge.importers import AuctionBidImporterFactory
-from prozorro_auction.constants import AuctionType, CriterionClassificationScheme
+from prozorro_auction.constants import AuctionType, CRITERIA_LCC
 from prozorro_auction.settings import (
     logger,
     TEST_MODE,
@@ -145,7 +145,7 @@ def get_criteria(tender, lot=None):
         if criterion.get("relatesTo") == "lot" and criterion.get("relatedItem") != lot["id"]:
             continue
         classification = criterion.get("classification", {})
-        if classification.get("scheme") == CriterionClassificationScheme.LCC.value:
+        if classification.get("id") in CRITERIA_LCC:
             criteria.append(criterion)
     return criteria
 

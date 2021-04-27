@@ -21,7 +21,7 @@ from tests.base import (
     test_tender_data_features,
     test_tender_data_lcc,
     test_tender_data_esco,
-    test_tender_data_esco_features, 
+    test_tender_data_esco_features,
     test_tender_data_esco_multilot,
 )
 
