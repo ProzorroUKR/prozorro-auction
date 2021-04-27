@@ -20,6 +20,9 @@ from tests.base import (
     test_tender_data_multilot,
     test_tender_data_features,
     test_tender_data_lcc,
+    test_tender_data_esco,
+    test_tender_data_esco_features, 
+    test_tender_data_esco_multilot,
 )
 
 
@@ -77,7 +80,6 @@ class GetDataFromTenderTestCase(unittest.TestCase):
         self.assertEqual(result["title"], tender["title"])
         self.assertEqual(result["procurementMethodType"], tender["procurementMethodType"])
         self.assertEqual(result["procuringEntity"], tender["procuringEntity"])
-        self.assertEqual(result["minimalStep"], tender["minimalStep"])
         self.assertEqual(result["start_at"], tender["auctionPeriod"]["startDate"])
         self.assertEqual(result["is_cancelled"], False)
 
@@ -86,12 +88,22 @@ class GetDataFromTenderTestCase(unittest.TestCase):
         self.assertEqual(result["_id"], tender["id"])
         self.assertEqual(result["lot_id"], None)
         self.assertEqual(result["items"], get_items(tender))
+        if tender["procurementMethodType"] == "esco":
+            self.assertEqual(result["minimalStepPercentage"], tender["minimalStepPercentage"])
+        else:
+            self.assertEqual(result["value"], tender["value"])
+            self.assertEqual(result["minimalStep"], tender["minimalStep"])
 
     def assert_auction_multilot_fields(self, result, tender, lot):
         self.assert_auction_basic_fields(result, tender)
         self.assertEqual(result["_id"], f"{tender['id']}_{result['lot_id']}")
         self.assertIn(result["lot_id"], map(lambda lot: lot["id"], tender["lots"]))
         self.assertEqual(result["items"], get_items(tender, lot))
+        if tender["procurementMethodType"] == "esco":
+            self.assertEqual(result["minimalStepPercentage"], lot["minimalStepPercentage"])
+        else:
+            self.assertEqual(result["value"], lot["value"])
+            self.assertEqual(result["minimalStep"], lot["minimalStep"])
 
     def assert_auction_bid_fields(self, bid_result, original_bid):
         self.assertEqual(bid_result["id"], original_bid["id"])
@@ -107,9 +119,7 @@ class GetDataFromTenderTestCase(unittest.TestCase):
         self.assertEqual(bid_result["date"], original_lot_value["date"])
         self.assertEqual(bid_result["value"], original_lot_value["value"])
 
-    def test_get_data_default(self):
-        tender = deepcopy(test_tender_data)
-
+    def assert_auction_default(self, tender):
         results = list(get_data_from_tender(tender))
 
         self.assert_auction_keys(results)
@@ -127,14 +137,10 @@ class GetDataFromTenderTestCase(unittest.TestCase):
             ))
             self.assert_auction_bid_fields(bid_result, bid)
 
-    def test_get_data_default_multilot(self):
-        tender = deepcopy(test_tender_data_multilot)
-
+    def assert_auction_default_multilot(self, tender):
         results = list(get_data_from_tender(tender))
-
         self.assert_auction_keys(results)
-        self.assertEqual(len(results), 2)
-
+        self.assertEqual(len(results), len(tender["lots"]))
         for result in results:
             lot = next(filter(
                 lambda lot: lot["id"] == result["lot_id"],
@@ -162,14 +168,10 @@ class GetDataFromTenderTestCase(unittest.TestCase):
                 ))
                 self.assert_auction_multilot_bid_fields(bid_result, bid, lot_value)
 
-    def test_get_data_meat(self):
-        tender = deepcopy(test_tender_data_features)
-
+    def assert_auction_meat(self, tender):
         results = list(get_data_from_tender(tender))
-
         self.assert_auction_keys(results)
         self.assertEqual(len(results), 1)
-
         result = results[0]
         self.assert_auction_fields(result, tender)
         self.assertEqual(result["auction_type"], "meat")
@@ -181,6 +183,7 @@ class GetDataFromTenderTestCase(unittest.TestCase):
                 tender["bids"]
             ))
             self.assert_auction_bid_fields(bid_result, bid)
+            self.assertTrue(len(bid_result["parameters"]) > 0)
             self.assertEqual(bid_result["parameters"], bid["parameters"])
             expected_coeficient = str(calculate_coeficient(
                 tender["features"],
@@ -195,14 +198,10 @@ class GetDataFromTenderTestCase(unittest.TestCase):
             ))
             self.assertEqual(bid_result["amount_features"], expected_amount_features)
 
-    def test_get_data_lcc(self):
-        tender = deepcopy(test_tender_data_lcc)
-
+    def assert_auction_lcc(self, tender):
         results = list(get_data_from_tender(tender))
-
         self.assert_auction_keys(results)
         self.assertEqual(len(results), 1)
-
         result = results[0]
         self.assert_auction_fields(result, tender)
         self.assertEqual(result["auction_type"], "lcc")
@@ -217,6 +216,37 @@ class GetDataFromTenderTestCase(unittest.TestCase):
             ))
             self.assert_auction_bid_fields(bid_result, bid)
             self.assertEqual(bid_result["responses"], bid["requirementResponses"])
+
+    def test_get_data_default(self):
+        tender = deepcopy(test_tender_data)
+        self.assert_auction_default(tender)
+
+    def test_get_data_default_esco(self):
+        tender = deepcopy(test_tender_data_esco)
+        assert tender["procurementMethodType"] == "esco"
+        self.assert_auction_default(tender)
+
+    def test_get_data_default_multilot(self):
+        tender = deepcopy(test_tender_data_multilot)
+        self.assert_auction_default_multilot(tender)
+
+    def test_get_data_default_multilot_esco(self):
+        tender = deepcopy(test_tender_data_esco_multilot)
+        assert tender["procurementMethodType"] == "esco"
+        self.assert_auction_default_multilot(tender)
+
+    def test_get_data_meat(self):
+        tender = deepcopy(test_tender_data_features)
+        self.assert_auction_meat(tender)
+
+    def test_get_data_meat_esco(self):
+        tender = deepcopy(test_tender_data_esco_features)
+        assert tender["procurementMethodType"] == "esco"
+        self.assert_auction_meat(tender)
+
+    def test_get_data_lcc(self):
+        tender = deepcopy(test_tender_data_lcc)
+        self.assert_auction_lcc(tender)
 
 
 class GenerateLotAuctionIdTestCase(unittest.TestCase):
