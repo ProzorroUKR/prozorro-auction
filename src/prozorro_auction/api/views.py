@@ -195,7 +195,7 @@ async def ping_ws(ws):
             await ws.send_str("PING")  # send it, so client is sure that connection is fine
             res = await ws.receive(timeout=5)  # we do actually nothing if there is no pong
             logger.debug(f"Ping response: {res.data}")
-    except (ConnectionResetError, asyncio.CancelledError) as e:
+    except (ConnectionResetError, asyncio.CancelledError, asyncio.TimeoutError) as e:
         logger.info(f"Error at ping {e}")
 
 
