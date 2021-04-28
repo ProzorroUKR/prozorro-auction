@@ -1,9 +1,9 @@
 from copy import deepcopy
 from datetime import timedelta
 
-from prozorro_auction.utils import convert_datetime, get_now
+from prozorro_auction.utils import convert_datetime, get_now, copy_fields
 from prozorro_auction.databridge.importers import AuctionBidImporterFactory
-from prozorro_auction.constants import AuctionType, CriterionClassificationScheme
+from prozorro_auction.constants import AuctionType, CRITERIA_LCC
 from prozorro_auction.settings import (
     logger,
     TEST_MODE,
@@ -26,15 +26,13 @@ def get_data_from_tender(tender):
         mode=TEST_MODE and tender.get("submissionMethodDetails"),
     )
 
-    copy_fields = (
-        "tenderID", "title", "title_en", "description", "description_en",
-        "procurementMethodType", "procuringEntity", "minimalStep", "value",
-        "NBUdiscountRate", "noticePublicationDate", "minimalStepPercentage",
+    copy_fields(tender_auction, tender, (
+        "tenderID", "title", "title_en",
+        "description", "description_en",
+        "procurementMethodType", "procuringEntity",
+        "NBUdiscountRate", "noticePublicationDate",
         "fundingKind", "yearlyPaymentsPercentageRange",
-    )
-    for f in copy_fields:
-        if f in tender:
-            tender_auction[f] = tender[f]
+    ))
 
     if "lots" in tender:
         for lot in tender["lots"]:
@@ -56,6 +54,9 @@ def generate_auction_data(auction, tender, active_bids, start_at, lot=None):
     :param lot:
     :return:
     """
+    copy_fields(auction, lot or tender, (
+        "value", "minimalStep", "minimalStepPercentage",
+    ))
     auction["_id"] = generate_auction_id(tender, lot)
     auction["start_at"] = start_at
     auction["lot_id"] = get_lot_id(lot)
@@ -144,7 +145,7 @@ def get_criteria(tender, lot=None):
         if criterion.get("relatesTo") == "lot" and criterion.get("relatedItem") != lot["id"]:
             continue
         classification = criterion.get("classification", {})
-        if classification.get("scheme") == CriterionClassificationScheme.LCC.value:
+        if classification.get("id") in CRITERIA_LCC:
             criteria.append(criterion)
     return criteria
 

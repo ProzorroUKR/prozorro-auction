@@ -205,16 +205,28 @@ test_lots = [
         "status": "active",
         "title": "lot title",
         "description": "lot description",
-        "value": test_tender_data["value"],
-        "minimalStep": test_tender_data["minimalStep"],
+        "value": {
+            "amount": test_tender_data["value"]["amount"] + 1,
+            "currency": test_tender_data["value"]["currency"]
+        },
+        "minimalStep": {
+            "amount": test_tender_data["minimalStep"]["amount"] + 1,
+            "currency": test_tender_data["minimalStep"]["currency"]
+        },
     },
     {
         "id": uuid.uuid4().hex,
         "status": "active",
         "title": "lot title 2",
         "description": "lot description 2",
-        "value": test_tender_data["value"],
-        "minimalStep": test_tender_data["minimalStep"],
+        "value": {
+            "amount": test_tender_data["value"]["amount"] + 2,
+            "currency": test_tender_data["value"]["currency"]
+        },
+        "minimalStep": {
+            "amount": test_tender_data["minimalStep"]["amount"] + 2,
+            "currency": test_tender_data["minimalStep"]["currency"]
+        },
     }
 ]
 
@@ -521,6 +533,55 @@ test_bids_lcc = deepcopy(test_bids)
 test_bids_lcc[0]["requirementResponses"] = test_resposes_lcc
 test_bids_lcc[1]["requirementResponses"] = test_resposes_lcc
 test_tender_data_lcc["bids"] = test_bids_lcc
+
+NBU_DISCOUNT_RATE = 0.22
+
+test_tender_data_esco = deepcopy(test_tender_data)
+test_tender_data_esco["procurementMethodType"] = "esco"
+test_tender_data_esco["NBUdiscountRate"] = NBU_DISCOUNT_RATE
+test_tender_data_esco["minimalStepPercentage"] = 0.02712
+test_tender_data_esco["fundingKind"] = "other"
+test_tender_data_esco["yearlyPaymentsPercentageRange"] = 0.80000
+
+del test_tender_data_esco["value"]
+del test_tender_data_esco["minimalStep"]
+
+test_bids_esco = deepcopy(test_bids)
+for bid in test_bids_esco:
+    bid["value"] = {
+        "yearlyPaymentsPercentage": 0.9,
+        "annualCostsReduction": [100] * 21,
+        "contractDuration": {"years": 10, "days": 10},
+    }
+
+test_tender_data_esco["bids"] = test_bids_esco
+
+test_tender_data_esco_features = deepcopy(test_tender_data_features)
+test_tender_data_esco_features["procurementMethodType"] = "esco"
+test_tender_data_esco_features["NBUdiscountRate"] = NBU_DISCOUNT_RATE
+test_tender_data_esco_features["minimalStepPercentage"] = 0.027
+test_tender_data_esco_features["fundingKind"] = "other"
+test_tender_data_esco_features["yearlyPaymentsPercentageRange"] = 0.80000
+
+del test_tender_data_esco_features["value"]
+del test_tender_data_esco_features["minimalStep"]
+
+test_tender_data_esco_multilot = deepcopy(test_tender_data_multilot)
+test_tender_data_esco_multilot["procurementMethodType"] = "esco"
+test_tender_data_esco_multilot["NBUdiscountRate"] = NBU_DISCOUNT_RATE
+test_tender_data_esco_multilot["minimalStepPercentage"] = 0.02712
+test_tender_data_esco_multilot["fundingKind"] = "other"
+test_tender_data_esco_multilot["yearlyPaymentsPercentageRange"] = 0.80000
+
+test_lots_esco = deepcopy(test_lots)
+for lot in test_lots_esco:
+    del lot["value"]
+    del lot["minimalStep"]
+    lot["minimalStepPercentage"] = 0.02514
+    lot["fundingKind"] = "other"
+    lot["yearlyPaymentsPercentageRange"] = 0.80000
+
+test_tender_data_esco_multilot["lots"] = test_lots_esco
 
 
 class AsyncMock(MagicMock):
