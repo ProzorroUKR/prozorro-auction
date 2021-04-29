@@ -1,7 +1,7 @@
 from copy import deepcopy
 from datetime import timedelta
 
-from prozorro_auction.utils import convert_datetime, get_now, copy_fields
+from prozorro_auction.utils.base import get_now, convert_datetime, copy_fields
 from prozorro_auction.databridge.importers import AuctionBidImporterFactory
 from prozorro_auction.constants import AuctionType, CRITERIA_LCC
 from prozorro_auction.settings import (

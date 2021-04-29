@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from datetime import timedelta
 from copy import deepcopy
 
-from prozorro_auction.utils import get_now
+from prozorro_auction.utils.base import get_now
 
 now = get_now()
 

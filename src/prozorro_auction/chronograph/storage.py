@@ -1,6 +1,6 @@
 from prozorro_auction.storage import get_mongodb_collection
 from prozorro_auction.settings import logger, PROCESSING_LOCK, MONGODB_ERROR_INTERVAL
-from prozorro_auction.utils import get_now
+from prozorro_auction.utils.base import get_now
 from pymongo.errors import PyMongoError
 from pymongo.collection import ReturnDocument
 from datetime import timedelta

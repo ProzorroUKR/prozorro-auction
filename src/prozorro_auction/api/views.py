@@ -8,7 +8,7 @@ from prozorro_auction.api.utils import json_response, json_dumps
 from prozorro_auction.api.model import get_test_auction, get_posted_bid, get_bid_response_data, get_bid_by_bidder_id
 from prozorro_auction.databridge.model import build_stages
 from aiohttp import web
-from prozorro_auction.utils import get_now
+from prozorro_auction.utils.base import get_now
 import asyncio
 
 

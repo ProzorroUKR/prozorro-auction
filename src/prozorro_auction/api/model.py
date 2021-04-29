@@ -1,6 +1,10 @@
 from prozorro_auction.api.utils import ValidationError, ForbiddenError
 from prozorro_auction.constants import AuctionType, ProcurementMethodType
-from prozorro_auction.utils import get_now
+from prozorro_auction.utils.costs import (
+    float as float_costs_utils,
+    fraction as fraction_costs_utils,
+)
+from prozorro_auction.utils.base import get_now
 from esculator import npv
 from prozorro_auction.settings import logger, TZ
 from fractions import Fraction
@@ -110,22 +114,38 @@ def _validate_amount(auction, auction_stage, bid, data):
 
     auction_type = get_stage_auction_type(auction_stage)
     if auction_type == AuctionType.DEFAULT:
-        minimal_bid = auction_stage['amount']
-        max_allowed = minimal_bid - auction['minimalStep']['amount']
-        max_allowed = float(str(max_allowed))  # convert floats to more likely values, ex 0.19999999999999996 to 0.2
+        max_allowed = float_costs_utils.amount_allowed(
+            amount=auction_stage['amount'],
+            min_step_amount=auction['minimalStep']['amount'],
+            reverse=True,
+        )
         if amount > max_allowed:
             raise ValidationError(u'Too high value')
     elif auction_type == AuctionType.MEAT:
-        minimal_bid = auction_stage['amount_features']
-        minimal = Fraction(minimal_bid) * Fraction(bid["coeficient"])
-        minimal -= Fraction(auction['minimalStep']['amount'])
-        if amount > minimal:
+        calculated_amount = fraction_costs_utils.amount_from_features(
+            amount_features=auction_stage['amount_features'],
+            coeficient=bid["coeficient"],
+            reverse=True,
+        )
+        max_allowed = fraction_costs_utils.amount_allowed(
+            amount=calculated_amount,
+            min_step_amount=auction['minimalStep']['amount'],
+            reverse=True,
+        )
+        if amount > max_allowed:
             raise ValidationError(u'Too high value')
     elif auction_type == AuctionType.LCC:
-        minimal_bid = auction_stage['amount_weighted']
-        minimal = minimal_bid - bid["non_price_cost"]
-        minimal -= auction['minimalStep']['amount']
-        if amount > minimal:
+        calculated_amount = float_costs_utils.amount_from_weighted(
+            amount_weighted=auction_stage['amount_weighted'],
+            non_price_cost=bid["non_price_cost"],
+            reverse=True,
+        )
+        max_allowed = float_costs_utils.amount_allowed(
+            amount=calculated_amount,
+            min_step_amount=auction['minimalStep']['amount'],
+            reverse=True,
+        )
+        if amount > max_allowed:
             raise ValidationError(u'Too high value')
     else:
         message = f"Auction type {auction_type.value} is not supported"
@@ -179,19 +199,28 @@ def _validate_esco_fields(auction, auction_stage, bid, data):
         auction['NBUdiscountRate']
     )
 
-    # TODO: check if it's a bug:
-    #  - "max_bid + minimalStepPercentage" - with features
-    #  - "max_bid + max_bid * minimalStepPercentage" - without features
-
     auction_type = get_stage_auction_type(auction_stage)
     if auction_type == AuctionType.DEFAULT:
-        max_bid = Fraction(auction_stage['amount'])
-        if amount < max_bid + max_bid * Fraction(auction['minimalStepPercentage']):
+        min_allowed = fraction_costs_utils.amount_allowed_percentage(
+            amount=auction_stage['amount'],
+            min_step_percentage=auction['minimalStepPercentage'],
+            reverse=False,
+        )
+        if amount < min_allowed:
             message = 'Amount NPV: Too low value'
             raise ValidationError(message)
     elif auction_type == AuctionType.MEAT:
-        max_bid = Fraction(auction_stage['amount_features']) * Fraction(bid["coeficient"])
-        if amount < max_bid + Fraction(auction['minimalStepPercentage']):
+        calculated_amount = fraction_costs_utils.amount_from_features(
+            amount_features=auction_stage['amount_features'],
+            coeficient=bid["coeficient"],
+            reverse=False,
+        )
+        min_allowed = fraction_costs_utils.amount_allowed_percentage(
+            amount=calculated_amount,
+            min_step_percentage=auction['minimalStepPercentage'],
+            reverse=False,
+        )
+        if amount < min_allowed:
             message = 'Amount NPV: Too low value'
             raise ValidationError(message)
     elif auction_type == AuctionType.LCC:
