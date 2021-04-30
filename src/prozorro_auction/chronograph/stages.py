@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from prozorro_auction.chronograph.requests import get_tender_documents, get_tender_bids, get_tender_public_bids
 from prozorro_auction.chronograph.tasks import upload_audit_document, send_auction_results
 from prozorro_auction.chronograph.storage import update_auction
-from prozorro_auction.utils import get_now
+from prozorro_auction.utils.base import get_now
 from prozorro_auction.chronograph.model import (
     sort_bids, get_label_dict, get_bidder_number, update_auction_results,
     publish_bids_made_in_current_stage, copy_bid_stage_fields, set_auction_bidders_real_names,

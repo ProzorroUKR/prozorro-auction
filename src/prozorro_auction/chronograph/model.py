@@ -2,7 +2,11 @@ from yaml import safe_dump
 from fractions import Fraction
 
 from prozorro_auction.settings import logger
-from prozorro_auction.utils import datetime_to_str, get_now, copy_dict
+from prozorro_auction.utils.costs import (
+    float as float_costs_utils,
+    fraction as fraction_costs_utils,
+)
+from prozorro_auction.utils.base import get_now, datetime_to_str, copy_dict
 from prozorro_auction.constants import AuctionType
 
 
@@ -111,18 +115,27 @@ def publish_bids_made_in_current_stage(auction):
                     bid["date"] = bid_stage_items.pop("time")  # we just can't be consistent on field names
                     bid["value"].update(bid_stage_items)
                     if auction["auction_type"] == AuctionType.MEAT.value:
-                        coeficient = Fraction(bid["coeficient"])
                         if is_esco_bid(bid):
-                            amount_features = Fraction(bid["value"]['amountPerformance']) * coeficient
+                            bid['amount_features'] = str(fraction_costs_utils.amount_to_features(
+                                amount=bid["value"]['amountPerformance'],
+                                coeficient=bid["coeficient"],
+                                reverse=False,
+                            ))
                         else:
-                            amount_features = Fraction(bid["value"]['amount']) / coeficient
-                        bid['amount_features'] = str(amount_features)
+                            bid['amount_features'] = str(fraction_costs_utils.amount_to_features(
+                                amount=bid["value"]['amount'],
+                                coeficient=bid["coeficient"],
+                                reverse=True,
+                            ))
                     elif auction["auction_type"] == AuctionType.LCC.value:
                         if is_esco_bid(bid):
                             raise NotImplementedError()
                         else:
-                            amount_weighted = bid["value"]['amount'] + bid["non_price_cost"]
-                            bid['amount_weighted'] = amount_weighted
+                            bid['amount_weighted'] = float_costs_utils.amount_to_weighted(
+                                amount=bid["value"]['amount'],
+                                non_price_cost=bid["non_price_cost"],
+                                reverse=True,
+                            )
                     # update public stage fields
                     copy_bid_stage_fields(bid, stage)
                     stage["changed"] = True

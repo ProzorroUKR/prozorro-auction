@@ -1,7 +1,10 @@
-from datetime import datetime
-from prozorro_auction.settings import TZ
-from iso8601 import parse_date
+from decimal import Decimal
+
 import pytz
+from datetime import datetime
+from iso8601 import parse_date
+
+from prozorro_auction.settings import TZ
 
 
 def get_now():
@@ -26,3 +29,7 @@ def copy_fields(dest, source, fields):
     for field in fields:
         if field in source:
             dest[field] = source[field]
+
+
+def as_decimal(value):
+    return Decimal(str(value))
