@@ -8,6 +8,6 @@ pyyaml
 python-dateutil==2.6.1
 pytest-asyncio
 mock==4.0.3
-git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.1
-git+git://github.com/ProzorroUKR/esculator.git@0.0.2
-git+git://github.com/ProzorroUKR/barbecue.git@0.2
+git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.1.1#egg=prozorro_crawler
+git+git://github.com/ProzorroUKR/esculator.git@0.0.2#egg=esculator
+git+git://github.com/ProzorroUKR/barbecue.git@0.2#egg=barbecue
