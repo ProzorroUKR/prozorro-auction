@@ -1,11 +1,11 @@
 from setuptools import find_packages, setup
 
-requirements = []
+requires = []
 
 with open('requirements.txt', 'r') as f:
     for resource in f.readlines():
         if not resource.startswith('git+'):
-            requirements.append(resource.strip())
+            requires.append(resource.strip())
         else:
             res = resource.strip()
             egg = res.split("#egg=")[1]
@@ -18,5 +18,5 @@ setup(
     description='',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    install_requires=requirements + ["prozorro_crawler==1.1.1"],
+    install_requires=requires + ["prozorro_crawler==1.1.1"],
 )
