@@ -1,3 +1,4 @@
+from prozorro_auction.utils.base import datetime_to_str
 from prozorro_auction.api.utils import ValidationError, ForbiddenError
 from prozorro_auction.constants import AuctionType, ProcurementMethodType
 from prozorro_auction.utils.costs import (
@@ -24,6 +25,7 @@ def get_test_auction():
         _id=uid,
         lot_id=None,
         tender_id="",
+        auction_type="default",
         mode=None,
         current_stage=-1,
         minimalStep={
@@ -91,7 +93,7 @@ def get_posted_bid(auction, bid, hash_value, data):
     if validated == -1:
         return ""  # cancellation of the posted bid this round
     else:
-        posted_bid["time"] = get_now()
+        posted_bid["time"] = get_now().isoformat()
     return posted_bid
 
 
