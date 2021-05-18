@@ -38,6 +38,7 @@ services:
       - PYTHONUNBUFFERED=1
     volumes:
       - ./src:/app
+      - ./tests:/app/tests
     ports:
       - 8000:8000
     depends_on:

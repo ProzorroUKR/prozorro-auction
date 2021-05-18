@@ -56,10 +56,12 @@ async def chronograph_loop():
             try:
                 await tick_auction(auction)
             except RetryException as e:
-                logger.warning(e, extra={"MESSAGE_ID": "CHRONOGRAPH_TICK_RETRY"})
+                logger.warning(e, extra={"MESSAGE_ID": "CHRONOGRAPH_TICK_RETRY",
+                                         "AUCTION_ID": auction['_id']})
                 await postpone_timer_on_error(auction)
             except Exception as ex:
-                logger.exception(ex, extra={"MESSAGE_ID": "CHRONOGRAPH_TICK_EXCEPTION"})
+                logger.exception(ex, extra={"MESSAGE_ID": "CHRONOGRAPH_TICK_EXCEPTION",
+                                            "AUCTION_ID": auction['_id']})
                 await postpone_timer_on_error(auction)
             else:
                 await update_auction(auction)
