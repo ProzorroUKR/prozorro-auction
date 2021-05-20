@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 from prozorro_crawler.main import main
 from prozorro_auction.exceptions import SkipException
-from prozorro_auction.databridge.tasks import schedule_auction
+from prozorro_auction.databridge.tasks import schedule_auction, reveal_auction_names
 from prozorro_auction.databridge.model import get_auctions_from_tender, get_canceled_auctions_from_tender
 from prozorro_auction.databridge.requests import get_tender_document
 from prozorro_auction.databridge.storage import prepare_storage, update_auction
-from prozorro_auction.settings import API_TOKEN, PROCUREMENT_TYPES, logger
+from prozorro_auction.settings import API_TOKEN, PROCUREMENT_TYPES, logger, SENTRY_DSN
 import asyncio
+import sentry_sdk
 
 
 async def process_tender_data(session, tender):
@@ -29,6 +30,10 @@ async def process_tender_data(session, tender):
                 tasks.append(
                     update_auction(auction, insert=False)
                 )
+        elif tender["status"] == "active.qualification":  # publish bidder names
+            tasks.append(
+                reveal_auction_names(session, tender["id"])
+            )
         await asyncio.gather(*tasks)
     else:
         logger.info(f"Skipping {tender['id']} as {procurement_method_type} not in PROCUREMENT_TYPES")
@@ -40,6 +45,8 @@ async def auction_data_handler(session, items):
 
 
 if __name__ == '__main__':
+    if SENTRY_DSN:
+        sentry_sdk.init(dsn=SENTRY_DSN)
     headers = {
         "Authorization": f"Bearer {API_TOKEN}",
         "User-Agent": "Auction bridge 2.0",
