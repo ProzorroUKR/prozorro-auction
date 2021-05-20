@@ -390,3 +390,20 @@ def get_canceled_auctions_from_tender(tender):
             _id=f"{tender['id']}",
             is_cancelled=True
         )
+
+
+def set_auction_bidders_real_names(auction, tender_bids):
+    bidders = {
+        b["id"]: b["tenderers"][0]
+        for b in tender_bids
+    }
+    for section_name in ("initial_bids", "stages", "results"):
+        for section in auction[section_name]:
+            if "bidder_id" in section and section['bidder_id'] in bidders:
+                bidder = bidders[section['bidder_id']]
+                section["label"] = dict(
+                    uk=bidder["name"],
+                    ru=bidder.get("name_ru") or bidder["name"],
+                    en=bidder.get("name_en") or bidder["name"],
+                )
+    auction["names_revealed"] = True

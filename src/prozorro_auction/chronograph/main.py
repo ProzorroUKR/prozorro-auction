@@ -1,13 +1,14 @@
 from prozorro_auction.chronograph.storage import increase_and_read_expired_timer, update_auction
 from prozorro_auction.chronograph.stages import tick_auction, POSTPONE_ANNOUNCEMENT_TD
 from prozorro_auction.exceptions import RetryException
-from prozorro_auction.settings import logger, TZ
+from prozorro_auction.settings import logger, TZ, SENTRY_DSN
 from prozorro_auction.utils.base import get_now
 from datetime import timedelta
 from time import time
 import pytz
 import asyncio
 import signal
+import sentry_sdk
 
 
 KEEP_RUNNING = True
@@ -91,4 +92,6 @@ async def chronograph_loop():
 
 if __name__ == '__main__':
     configure_signals()
+    if SENTRY_DSN:
+        sentry_sdk.init(dsn=SENTRY_DSN)
     asyncio.run(chronograph_loop())

@@ -42,17 +42,6 @@ async def get_tender_documents(session, tender_id):
     return data.get("documents", "")
 
 
-async def get_tender_public_bids(session, tender_id):
-    data = await request_tender(session, tender_id)
-    try:
-        bids = data["bids"]
-    except KeyError:
-        logger.warning(f"Bids info not public yet: {tender_id}", extra={"MESSAGE_ID": "BIDS_NOT_FOUND"})
-        raise RetryException()
-    else:
-        return bids
-
-
 async def get_tender_bids(session, tender_id):
     data = await request_tender(session, tender_id, url_suffix="/auction")
     return data.get("bids", "")

@@ -37,6 +37,7 @@ async def read_auction(auction_id):
 
 async def update_auction(data, insert=True):
     collection = get_mongodb_collection()
+    data.pop("modified", None)
     while True:
         try:
             result = await collection.update_one(
