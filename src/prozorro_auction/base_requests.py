@@ -42,6 +42,9 @@ async def request_tender(session, tender_id, json=None, method_name="get", url_s
         elif resp.status == 409:
             logger.warning(f"Resource error while requesting tender {tender_id}",
                            extra={"MESSAGE_ID": "RESOURCE_ERROR", **context})
+        elif resp.status == 403:
+            logger.warning(f"Forbidden request of tender {tender_id}",
+                           extra={"MESSAGE_ID": "RESOURCE_FORBIDDEN", **context})
         else:
             resp_text = await resp.text()
             logger.error(
