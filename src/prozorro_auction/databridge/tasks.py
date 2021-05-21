@@ -81,7 +81,12 @@ async def reveal_auction_names(session, tender_id):
                 logger.info(f"Not found; skipping {tender['id']} reveal task",
                             extra={"MESSAGE_ID": "AUCTION_REVEAL_ALREADY_DONE"})
             else:
-                set_auction_bidders_real_names(auction, tender["bids"])
+                try:
+                    set_auction_bidders_real_names(auction, tender["bids"])
+                except Exception as e:
+                    logger.exception(e, extra={"MESSAGE_ID": "BIDS_NOT_FOUND",
+                                               "AUCTION_ID": auction_id})
+                    return
                 await update_auction(auction)
                 logger.info(f"Success {tender['id']} reveal task",
                             extra={"MESSAGE_ID": "AUCTION_REVEAL_DONE"})
