@@ -1,3 +1,6 @@
+from pymongo import ReadPreference
+from pymongo.write_concern import WriteConcern
+from pymongo.read_concern import ReadConcern
 from prozorro_crawler.settings import *
 from base64 import b64encode
 import pytz
@@ -43,7 +46,10 @@ else:
 # replace defaults from crawler.settings
 MONGODB_DATABASE = os.environ.get("MONGODB_DATABASE", "prozorro-auction")
 MONGODB_COLLECTION = os.environ.get("MONGODB_COLLECTION", "auctions")
-MONGODB_WRITE_CONCERN = os.environ.get("MONGODB_WRITE_CONCERN", "majority")
+READ_PREFERENCE = getattr(ReadPreference, os.environ.get("READ_PREFERENCE", "PRIMARY"))
+raw_write_concert = os.environ.get("WRITE_CONCERN", "majority")
+WRITE_CONCERN = WriteConcern(w=int(raw_write_concert) if raw_write_concert.isnumeric() else raw_write_concert)
+READ_CONCERN = ReadConcern(level=os.environ.get("READ_CONCERN") or "majority")
 
 # number of seconds to protect auction from other workers
 PROCESSING_LOCK = os.getenv("PROCESSING_LOCK", 1)
