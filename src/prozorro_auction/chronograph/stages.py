@@ -19,6 +19,7 @@ async def tick_auction(auction):
     stages = auction.get("stages")
     next_stage_index = current_stage + 1
     if next_stage_index >= len(stages):
+        auction["timer"] = None
         return logger.error(f"Chronograph tries to update {auction['_id']} "
                             f"to a non-existed stage {next_stage_index}")
 
@@ -127,12 +128,6 @@ async def on_start_stage_announcement(auction):
                 update_date=False
             )
 
-        if not auction.get("_auction_results_sent"):
-            # send results to the api
-            tender_bids = await get_tender_bids(session, auction["tender_id"])  # private data
-            await send_auction_results(session, auction, tender_bids)
-
-            await update_auction(
-                {"_id": auction["_id"], "_auction_results_sent": True},
-                update_date=False
-            )
+        # send results to the api
+        tender_bids = await get_tender_bids(session, auction["tender_id"])  # private data
+        await send_auction_results(session, auction, tender_bids)
