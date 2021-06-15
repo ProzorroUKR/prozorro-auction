@@ -396,6 +396,7 @@ def set_auction_bidders_real_names(auction, tender_bids):
     bidders = {
         b["id"]: b["tenderers"][0]
         for b in tender_bids
+        if "tenderers" in b  # deleted/unsuccessful
     }
     for section_name in ("initial_bids", "stages", "results"):
         for section in auction[section_name]:
