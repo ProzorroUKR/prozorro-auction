@@ -4,6 +4,9 @@ from datetime import datetime
 import json
 import pytz
 
+FORWARDED_FOR_DELIMITER = ','
+FORWARDED_FOR_EXCLUDE_PREFIX = '172.'
+
 
 def json_serialize(obj):
     if isinstance(obj, datetime):
@@ -22,6 +25,18 @@ def json_response(data, status=200):
     return web.json_response(data, status=status, dumps=json_dumps)
 
 
+def get_forwarded_for(request):
+    return FORWARDED_FOR_DELIMITER.join(request.headers.getall("X-Forwarded-For"))
+
+
+def get_remote_addr(request):
+    remote_addr = FORWARDED_FOR_DELIMITER.join([
+         ip.strip() for ip in get_forwarded_for(request).split(FORWARDED_FOR_DELIMITER)
+         if not ip.strip().startswith(FORWARDED_FOR_EXCLUDE_PREFIX)
+    ])
+    return remote_addr or request.remote
+
+
 class HTTPError(web.HTTPError):
 
     def __init__(self, error, **kwargs):
@@ -36,4 +51,3 @@ class ValidationError(HTTPError):
 
 class ForbiddenError(HTTPError):
     status_code = 401
-
