@@ -51,10 +51,8 @@ async def post_auction_urls(session, auction, tender):
     """
     patch_data = build_urls_patch(auction, tender)
     await patch_tender_auction(session, tender["id"], auction["lot_id"], patch_data)
-    logger.debug(f"Auction {auction['_id']} urls",
-                 extra={"MESSAGE_ID": "SET_AUCTION_URLS", "DATA": patch_data})
     logger.info(f"Set auction and participation urls for auction {auction['_id']}",
-                extra={"MESSAGE_ID": "SET_AUCTION_URLS"})
+                extra={"MESSAGE_ID": "SET_AUCTION_URLS", "DATA": patch_data})
 
 
 async def reveal_auction_names(session, tender_id):
