@@ -326,3 +326,11 @@ def build_results_bids_patch(auction, tender_bids):
                     )
                 break
     return data
+
+
+def get_verbose_current_stage(auction):
+    current_stage = auction.get("current_stage")
+    if 0 < current_stage < len(auction["stages"]):
+        return auction["stages"][current_stage]
+    else:
+        return f"Stage: {current_stage}"

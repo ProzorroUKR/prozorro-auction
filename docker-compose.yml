@@ -64,7 +64,7 @@ services:
       - mongo
     networks:
       - default
-      - openprocurementapi_apinet
+      - openprocurementapi_default
 
   chronograph:
     build: .
@@ -74,7 +74,7 @@ services:
       - PUBLIC_API_HOST=http://api
       - API_HOST=http://api
       - API_TOKEN=auction
-      - DS_HOST=http://ds
+      - DS_HOST=http://ds.k8s.prozorro.gov.ua
       - DS_USER=test
       - DS_PASSWORD=test
     command: prozorro_auction.chronograph.main
@@ -84,7 +84,20 @@ services:
       - mongo
     networks:
       - default
-      - openprocurementapi_apinet
+      - openprocurementapi_default
+
+  monitor:
+    build: .
+    environment:
+      - MONGODB_URL=mongodb://root:example@mongo:27017/?replicaSet=rs0
+      - PYTHONUNBUFFERED=1
+    command: prozorro_auction.monitor.main
+    volumes:
+      - ./src:/app
+    depends_on:
+      - mongo
+    networks:
+      - default
 
   frontend:
     image: docker-registry.prozorro.gov.ua/cdb/prozorro-auction-frontend:latest
@@ -99,5 +112,5 @@ services:
 
 networks:
     default: {}
-    openprocurementapi_apinet:
+    openprocurementapi_default:
         external: true

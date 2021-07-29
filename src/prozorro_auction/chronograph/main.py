@@ -1,5 +1,6 @@
 from prozorro_auction.chronograph.storage import increase_and_read_expired_timer, update_auction
 from prozorro_auction.chronograph.stages import tick_auction, POSTPONE_ANNOUNCEMENT_TD
+from prozorro_auction.chronograph.model import get_verbose_current_stage
 from prozorro_auction.exceptions import RetryException
 from prozorro_auction.settings import logger, TZ, SENTRY_DSN
 from prozorro_auction.utils.base import get_now
@@ -50,6 +51,7 @@ async def postpone_timer_on_error(auction):
 async def chronograph_loop():
     logger.info('Starting chronograph service')
     while KEEP_RUNNING:
+        total_start = time()
         auction = await increase_and_read_expired_timer()
         if auction:
             timer = auction["timer"]
@@ -70,6 +72,13 @@ async def chronograph_loop():
                 processing_time = time() - _start_time
                 current_ts = get_now()
                 timer_time = pytz.utc.localize(timer).astimezone(TZ)
+                extra_log = {
+                    "MESSAGE_ID": "CHRONOGRAPH_TICK_TIME",
+                    "PROCESSING_TIME": processing_time,
+                    "TOTAL_TIME": time() - total_start,
+                    "AUCTION_ID": auction['_id'],
+                    "STAGE": get_verbose_current_stage(auction),
+                }
                 if (
                     current_ts >= timer_time and not (
                         auction["timer"] is None and processing_time < POSTPONE_ANNOUNCEMENT_TD.total_seconds()
@@ -82,9 +91,12 @@ async def chronograph_loop():
                         f"While it's locked only by {auction['timer']} ({timer_time}). "
                         f"This may lead to inconsistency of data!"
                     )
-                    logger.critical(message)
+                    logger.critical(message, extra_log=extra_log)
                 else:
-                    logger.info(f"Processed auction {auction['_id']}, time - {processing_time}")
+                    logger.info(
+                        f"Processed auction {auction['_id']}, time - {processing_time}",
+                        extra=extra_log
+                    )
         else:
             logger.debug('No auctions needs to be updated. nooping')
             await asyncio.sleep(1)
