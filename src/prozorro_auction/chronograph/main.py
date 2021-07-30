@@ -1,6 +1,11 @@
 from prozorro_auction.chronograph.storage import increase_and_read_expired_timer, update_auction
 from prozorro_auction.chronograph.stages import tick_auction, POSTPONE_ANNOUNCEMENT_TD
 from prozorro_auction.chronograph.model import get_verbose_current_stage
+from prozorro_auction.chronograph.metrics import (
+    main as metrics_main,
+    chronograph_processing_time_summary,
+    chronograph_total_time_summary,
+)
 from prozorro_auction.exceptions import RetryException
 from prozorro_auction.settings import logger, TZ, SENTRY_DSN
 from prozorro_auction.utils.base import get_now
@@ -70,12 +75,13 @@ async def chronograph_loop():
                 await update_auction(auction)
 
                 processing_time = time() - _start_time
+                total_time = time() - total_start
                 current_ts = get_now()
                 timer_time = pytz.utc.localize(timer).astimezone(TZ)
                 extra_log = {
                     "MESSAGE_ID": "CHRONOGRAPH_TICK_TIME",
                     "PROCESSING_TIME": processing_time,
-                    "TOTAL_TIME": time() - total_start,
+                    "TOTAL_TIME": total_time,
                     "AUCTION_ID": auction['_id'],
                     "STAGE": get_verbose_current_stage(auction),
                 }
@@ -97,6 +103,9 @@ async def chronograph_loop():
                         f"Processed auction {auction['_id']}, time - {processing_time}",
                         extra=extra_log
                     )
+                # metrics update
+                chronograph_total_time_summary.observe(total_time)
+                chronograph_processing_time_summary.observe(processing_time)
         else:
             logger.debug('No auctions needs to be updated. nooping')
             await asyncio.sleep(1)
@@ -106,4 +115,7 @@ if __name__ == '__main__':
     configure_signals()
     if SENTRY_DSN:
         sentry_sdk.init(dsn=SENTRY_DSN)
-    asyncio.run(chronograph_loop())
+
+    loop = asyncio.get_event_loop()
+    loop.create_task(metrics_main())
+    loop.run_until_complete(chronograph_loop())

@@ -3,8 +3,10 @@ from prozorro_auction.monitor.settings import (
     MONITOR_TIMER_ERROR_LIMIT,
     MONITOR_INTERVAL_SECONDS,
     MONITOR_PENDING_AUCTION,
+    MONITOR_TIMER,
 )
-from prozorro_auction.monitor.storage import get_minimum_timer_auction, get_pending_count
+from prozorro_auction.monitor.storage import get_minimum_timer_auction, get_auction_count_by_timer
+from prozorro_auction.monitor.metrics import main as metrics_main
 from prozorro_auction.settings import logger, SENTRY_DSN, TZ
 from prozorro_auction.utils.base import get_now
 import asyncio
@@ -64,7 +66,7 @@ async def timer_monitor():
 async def pending_count():
     logger.info('Starting pending auctions monitoring')
     while KEEP_RUNNING:
-        count = await get_pending_count(get_now())
+        count = await get_auction_count_by_timer(get_now())
         logger.info(
             f"{count} auctions ready for chronograph",
             extra={
@@ -86,4 +88,7 @@ if __name__ == '__main__':
     if MONITOR_PENDING_AUCTION:
         loop.create_task(pending_count())
 
-    loop.run_until_complete(timer_monitor())
+    if MONITOR_TIMER:
+        loop.create_task(timer_monitor())
+
+    loop.run_until_complete(metrics_main())

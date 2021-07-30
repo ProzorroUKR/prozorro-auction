@@ -22,12 +22,12 @@ async def get_minimum_timer_auction(now):
             return auction
 
 
-async def get_pending_count(now):
+async def get_auction_count_by_timer(dt):
     collection = get_mongodb_collection()
     while True:
         try:
             count = await collection.count_documents(
-                {'timer': {'$exists': True, '$lte': now}},
+                {'timer': {'$exists': True, '$lte': dt}},
             )
         except PyMongoError as e:
             logger.warning(f"Read timer error {type(e)}: {e}",

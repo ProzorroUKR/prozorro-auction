@@ -80,6 +80,8 @@ services:
     command: prozorro_auction.chronograph.main
     volumes:
       - ./src:/app
+    ports:
+      - 9092:9091
     depends_on:
       - mongo
     networks:
@@ -91,9 +93,13 @@ services:
     environment:
       - MONGODB_URL=mongodb://root:example@mongo:27017/?replicaSet=rs0
       - PYTHONUNBUFFERED=1
+      - MONITOR_TIMER=0
+      - MONITOR_PENDING_AUCTION=0
     command: prozorro_auction.monitor.main
     volumes:
       - ./src:/app
+    ports:
+      - 9091:9091
     depends_on:
       - mongo
     networks:
