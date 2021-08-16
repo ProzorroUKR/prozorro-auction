@@ -83,7 +83,7 @@ async def chronograph_loop():
                     "PROCESSING_TIME": processing_time,
                     "TOTAL_TIME": total_time,
                     "AUCTION_ID": auction['_id'],
-                    "STAGE": get_verbose_current_stage(auction),
+                    "AUCTION_STAGE": get_verbose_current_stage(auction),
                 }
                 if (
                     current_ts >= timer_time and not (
