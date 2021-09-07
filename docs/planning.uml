@@ -1,0 +1,41 @@
+@startuml
+
+hnote over API: \
+Для тендерів/лотів з >2(3) бідів в статусах\n\
+"active.tendering", "active.pre-qualification.stand-still", "active.auction"\n\
+розраховуєтся auctionPeriod.shouldStartAfter, як остання дата з можливих:\n\
+- tenderPeriod.endDate\n\
+- complaint.decisionDate +3дні по всім скаргам на tender\n\
+- qualificationPeriod.endDate\n\
+- complaint.decisionDate +3дні по всім скаргам на qualifications\n\
+Окрім оборонок, дата ще додатково "нормалізуєтся":\n\
+2019-01-31 12:20 --> 2019-02-01 00:00
+
+CHRONOGRAPH -> API: читає auctionPeriod.shouldStartAfter
+
+hnote over CHRONOGRAPH: Розраховуєтся auctionPeriod.startDate\n\
+- береться auctionPeriod.shouldStartAfter і додаєтся 1 година\n\
+- якщо час якимось дивом більший за 11AM, додаєтся ще один день\n\
+- шукаєтся найближчій робочій день(можливо той самий)\n\
+- для цього дня шукаєтся час за допомогою логіки "slots"\n\
+Вона потрібна, щоб одночасно не виконувалось більше ніж N аукціонів,\n\
+інкаше старому модулю аукціонів могло не вистачити ресурсів.\n\
+Якщо в заданому дні не знайдено слота, береться наступний робочій\n\
+Початок аукціону на цьому етапі не може бути пізніше 15:30\n\
+- Рандомом додаєтся від 0 до 1799 секунд (до півгодини)
+
+CHRONOGRAPH -> API: записує auctionPeriod.startDate
+
+hnote over CHRONOGRAPH: Хронограф попередньо отримав від апі приблизну дату\n\
+завершення аукціону. В цей час він зробить запит.\n\
+Якщо аукціон не відбувся, \n\
+апі поверне нову дату auctionPeriod.shouldStartAfter,\n\
+а хронограф знову розрухує auctionPeriod.startDate
+
+CHRONOGRAPH -> API: перевіряє що аукціон завершився
+
+AUCTIONS -> API: для "active.auction" тендерів планує аукціони у auctionPeriod.startDate
+hnote over AUCTIONS: Проводить аукціони
+AUCTIONS -> API: записує результати та auctionPeriod.endDate
+
+@enduml
