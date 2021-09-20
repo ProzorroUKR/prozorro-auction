@@ -52,14 +52,14 @@ WRITE_CONCERN = WriteConcern(w=int(raw_write_concert) if raw_write_concert.isnum
 READ_CONCERN = ReadConcern(level=os.environ.get("READ_CONCERN") or "majority")
 
 # number of seconds to protect auction from other workers
-PROCESSING_LOCK = os.getenv("PROCESSING_LOCK", 1)
+PROCESSING_LOCK = float(os.getenv("PROCESSING_LOCK", 1))
 AUCTION_HOST = os.getenv("AUCTION_HOST", "http://localhost:8080")
 assert not AUCTION_HOST.endswith("/")
 assert AUCTION_HOST.startswith("http")
 QUICK_MODE_FAST_AUCTION_START_AFTER = int(os.getenv("QUICK_MODE_FAST_AUCTION_START_AFTER", 5))
 
 
-LATENCY_TIME = os.getenv("LATENCY_TIME", 10 * 60)
+LATENCY_TIME = float(os.getenv("LATENCY_TIME", 10 * 60))
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT")
 
