@@ -56,11 +56,11 @@ async def postpone_timer_on_error(auction):
 async def chronograph_loop():
     logger.info('Starting chronograph service')
     while KEEP_RUNNING:
-        total_start = time()
+        before_fetch_time = time()
         auction = await increase_and_read_expired_timer()
         if auction:
             timer = auction["timer"]
-            _start_time = time()
+            before_run_time = time()
             try:
                 await tick_auction(auction)
             except RetryException as e:
@@ -72,16 +72,20 @@ async def chronograph_loop():
                                             "AUCTION_ID": auction['_id']})
                 await postpone_timer_on_error(auction)
             else:
+                before_save_time = time()
                 await update_auction(auction)
+                after_save_time = time()
 
-                processing_time = time() - _start_time
-                total_time = time() - total_start
+                processing_time = before_save_time - before_run_time
+                total_time = after_save_time - before_fetch_time
                 current_ts = get_now()
                 timer_time = pytz.utc.localize(timer).astimezone(TZ)
                 extra_log = {
                     "MESSAGE_ID": "CHRONOGRAPH_TICK_TIME",
                     "PROCESSING_TIME": processing_time,
                     "TOTAL_TIME": total_time,
+                    "FETCH_TIME":  before_run_time - before_fetch_time,
+                    "SAVE_TIME": after_save_time - before_save_time,
                     "AUCTION_ID": auction['_id'],
                     "AUCTION_STAGE": get_verbose_current_stage(auction),
                 }
