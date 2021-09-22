@@ -1,7 +1,7 @@
 from prozorro_auction.storage import get_mongodb_collection
 from prozorro_auction.settings import logger, MONGODB_ERROR_INTERVAL
 from prozorro_auction.utils.base import get_now
-from pymongo import DESCENDING
+from pymongo import ASCENDING
 from pymongo.collection import ReturnDocument
 from pymongo.errors import PyMongoError
 from aiohttp import web
@@ -28,7 +28,7 @@ async def read_auction_list(skip, limit=10):
     cursor = collection.find(
         {"start_at": {"$gt": midnight}},
         to_projections(LIST_FIELDS)
-    ).sort("start_at", DESCENDING)
+    ).sort("start_at", ASCENDING)
     async for obj in cursor.skip(skip * limit).limit(limit):
         auctions.append(obj)
     return auctions
