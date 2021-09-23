@@ -13,7 +13,7 @@ test:
   image: docker-registry.prozorro.gov.ua/docker/images/python:3.8-alpine3.14
   stage: test
   tags:
-    - kube
+    - kube-dev
   before_script:
     - pip install -r requirements.txt
     - pip install -e .
