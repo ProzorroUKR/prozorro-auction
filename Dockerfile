@@ -1,7 +1,6 @@
-FROM python:3.7-slim
-RUN mkdir /app
+FROM docker-registry.prozorro.gov.ua/docker/images/python:3.8-alpine3.14
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends git && apt-get purge -y --auto-remove && rm -rf /var/lib/apt/lists/*
+RUN apk --no-cache add gcc build-base git openssl-dev libffi-dev
 ADD requirements.txt /app/
 RUN pip install -r requirements.txt
 COPY ./src /app
