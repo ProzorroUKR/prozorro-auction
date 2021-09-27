@@ -1,6 +1,7 @@
 from prozorro_auction.exceptions import RequestRetryException
 from prozorro_auction.settings import logger, CONNECTION_ERROR_INTERVAL, TOO_MANY_REQUESTS_INTERVAL, BASE_URL
 from json.decoder import JSONDecodeError
+import asyncio
 import aiohttp
 
 
@@ -12,7 +13,7 @@ async def request_tender(session, tender_id, json=None, method_name="get", url_s
         kwargs["json"] = context["JSON"] = json
     try:
         resp = await method(f"{BASE_URL}/{tender_id}{url_suffix}", **kwargs)
-    except aiohttp.ClientError as e:
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
         logger.warning(f"Error for {tender_id} {type(e)}: {e}", extra={"MESSAGE_ID": "HTTP_EXCEPTION", **context})
         resp = None
     else:
