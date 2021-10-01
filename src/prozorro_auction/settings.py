@@ -10,7 +10,6 @@ from prozorro_auction.constants import PROCUREMENT_METHOD_TYPES_DEFAULT
 
 API_PORT = int(os.environ.get("API_PORT", 8000))
 TZ = pytz.timezone(os.environ.get("TZ", "Europe/Kiev"))
-USER_AGENT = os.environ.get("USER_AGENT", "Auction 2.0")
 TEST_MODE = os.environ.get("TEST_MODE", False)
 
 
@@ -21,7 +20,7 @@ assert API_HOST.startswith("http")
 BASE_URL = f"{API_HOST}/api/{API_VERSION}/tenders"
 API_HEADERS = {
     "Authorization": f"Bearer {API_TOKEN}",
-    "User-Agent": USER_AGENT,
+    "User-Agent": CRAWLER_USER_AGENT,
 }
 
 DS_HOST = os.environ.get("DS_HOST", "https://upload-docs.prozorro.gov.ua")
@@ -33,7 +32,7 @@ DS_PASSWORD = os.environ.get("DS_PASSWORD", "bot")
 DS_TOKEN = b64encode(f"{DS_USER}:{DS_PASSWORD}".encode()).decode()
 DS_HEADERS = {
     "Authorization": f"Basic {DS_TOKEN}",
-    "User-Agent": USER_AGENT,
+    "User-Agent": CRAWLER_USER_AGENT,
 }
 
 

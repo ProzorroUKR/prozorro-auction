@@ -18,5 +18,5 @@ setup(
     description='',
     packages=find_packages('src'),
     package_dir={'': 'src'},
-    install_requires=requires + ["prozorro_crawler==1.1.1"],
+    install_requires=requires + ["prozorro_crawler==1.1.5"],
 )
