@@ -6,6 +6,7 @@ from prozorro_auction.databridge.model import get_auctions_from_tender, get_canc
 from prozorro_auction.databridge.requests import get_tender_document
 from prozorro_auction.databridge.storage import prepare_storage, update_auction
 from prozorro_auction.settings import API_TOKEN, PROCUREMENT_TYPES, logger, SENTRY_DSN
+from prozorro_crawler.settings import CRAWLER_USER_AGENT
 import asyncio
 import sentry_sdk
 
@@ -49,6 +50,6 @@ if __name__ == '__main__':
         sentry_sdk.init(dsn=SENTRY_DSN)
     headers = {
         "Authorization": f"Bearer {API_TOKEN}",
-        "User-Agent": "Auction bridge 2.0",
+        "User-Agent": CRAWLER_USER_AGENT,
     }
     main(auction_data_handler, init_task=prepare_storage, additional_headers=headers)
