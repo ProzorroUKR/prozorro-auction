@@ -3,7 +3,6 @@ from prozorro_auction.settings import logger
 from prozorro_auction.api.storage import (
     read_auction_list,
     get_auction,
-    insert_auction,
     update_auction_bid_stage,
     watch_changed_docs,
 )
@@ -13,12 +12,10 @@ from prozorro_auction.api.utils import (
     get_remote_addr,
 )
 from prozorro_auction.api.model import (
-    get_test_auction,
     get_posted_bid,
     get_bid_response_data,
     get_bid_by_bidder_id,
 )
-from prozorro_auction.databridge.model import build_stages
 from aiohttp import web
 from prozorro_auction.utils.base import get_now
 import asyncio
@@ -30,14 +27,6 @@ routes = web.RouteTableDef()
 @routes.get('/api')
 async def ping(request):
     return json_response({'text': 'pong'}, status=200)
-
-
-@routes.get('/api/create_test')
-async def create_test(request):
-    data = get_test_auction()
-    data["stages"] = build_stages(data)
-    await insert_auction(data)
-    return json_response(data, status=200)
 
 
 @routes.get('/api/auctions')

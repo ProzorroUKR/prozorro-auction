@@ -1,4 +1,4 @@
-from yaml import safe_dump
+from yaml import dump
 from fractions import Fraction
 
 from prozorro_auction.settings import logger
@@ -279,7 +279,8 @@ def build_audit_document(auction):
                 timeline[label][f"turn_{turn}"]["amount_weighted"] = stage.get("amount_weighted")
                 timeline[label][f"turn_{turn}"]["non_price_cost"] = stage.get("non_price_cost")
 
-    file_data = safe_dump(audit, default_flow_style=False, encoding="utf-8", allow_unicode=True)
+    # safe_dump couldn't convert [<class 'bson.int64.Int64'>, 2238300000]
+    file_data = dump(audit, default_flow_style=False, encoding="utf-8", allow_unicode=True)
     file_name = f"audit_{auction['_id']}.yaml"
     return file_name, file_data
 

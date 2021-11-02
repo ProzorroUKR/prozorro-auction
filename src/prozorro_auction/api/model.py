@@ -1,4 +1,3 @@
-from prozorro_auction.utils.base import datetime_to_str
 from prozorro_auction.api.utils import ValidationError, ForbiddenError
 from prozorro_auction.constants import AuctionType, ProcurementMethodType
 from prozorro_auction.utils.costs import (
@@ -7,60 +6,13 @@ from prozorro_auction.utils.costs import (
 )
 from prozorro_auction.utils.base import get_now
 from esculator import npv
-from prozorro_auction.settings import logger, TZ
 from fractions import Fraction
-from datetime import datetime, timedelta
 from iso8601 import parse_date
-import uuid
+
 
 NPV_CALCULATION_DURATION = 20  # accounting period, years
 DAYS_IN_YEAR = 365
 MAX_CONTRACT_DURATION = 15
-
-
-def get_test_auction():
-    uid = uuid.uuid4().hex
-    start_at = datetime.now(tz=TZ) + timedelta(seconds=30)
-    data = dict(
-        _id=uid,
-        lot_id=None,
-        tender_id="",
-        auction_type="default",
-        mode=None,
-        current_stage=-1,
-        minimalStep={
-            "currency": "UAH",
-            "amount": 35,
-            "valueAddedTaxIncluded": True
-        },
-        procurementMethodType=ProcurementMethodType.BELOW_THRESHOLD.value,
-        tenderID=f"UA-{uid}",
-        start_at=start_at,
-        timer=start_at,
-        procuringEntity=dict(
-            name="procuringEntity Name",
-            name_en="procuringEntity Name EN",
-        ),
-        title="Title",
-        title_en="Title En",
-        bids=[
-            {
-                "id": "a" * 32,
-                "hash": uuid.uuid4().hex,
-                "date": "2019-08-12T14:53:52+03:00",
-                "name": "Bidder#1 Name",
-                "value": {"amount": 132.22},
-            },
-            {
-                "id": "b" * 32,
-                "hash": uuid.uuid4().hex,
-                "date": "2019-08-12T15:53:52+03:00",
-                "name": "Bidder#2 Name",
-                "value": {"amount": 232.66},
-            }
-        ]
-    )
-    return data
 
 
 def get_bid_by_bidder_id(auction, bidder_id):
