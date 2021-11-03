@@ -150,7 +150,7 @@ async def check_authorization(request):
 class AuctionFeed:
     def __init__(self):
         self._auctions = {}
-        asyncio.ensure_future(self._process_changes_loop())
+        asyncio.create_task(self._process_changes_loop())
 
     def get(self, key):
         auction_doc = self._auctions.get(key, {}).get("doc")
@@ -202,7 +202,7 @@ class AuctionFeed:
                         subscribers.pop(socket)
 
 
-AUCTION_FEED = AuctionFeed()
+AUCTION_FEED = None
 
 
 def get_auction_feed():
