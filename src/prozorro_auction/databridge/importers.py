@@ -7,6 +7,7 @@ from typing import Optional
 from barbecue import calculate_coeficient, cooking
 
 from prozorro_auction.constants import AuctionType, CRITERIA_LCC
+from prozorro_auction.settings import logger
 
 
 class AbstractAuctionBidImporter(ABC):
@@ -35,11 +36,17 @@ class AuctionDefaultBidImporter(AbstractAuctionBidImporter):
         :return: auction bid data
         """
         value_container = value_container if value_container else self._bid
+        if "date" not in value_container:
+            logger.error("'date' not found in value_container",
+                         extra={"MESSAGE_ID": "DATE_NOT_FOUND"})
+            date = self._bid["date"]
+        else:
+            date = value_container["date"]
         return dict(
             id=self._bid["id"],
             hash=uuid.uuid4().hex,
             name=self._bid["tenderers"][0]["name"] if "tenderers" in self._bid else None,
-            date=value_container["date"],
+            date=date,
             value=value_container["value"],
         )
 
