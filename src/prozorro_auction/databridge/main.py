@@ -14,6 +14,7 @@ import sentry_sdk
 async def process_tender_data(session, tender):
     procurement_method_type = tender.get("procurementMethodType")
     if procurement_method_type in PROCUREMENT_TYPES:
+        logger.debug(f"Processing {tender['id']} as {procurement_method_type}")
         tasks = []
         if tender["status"] == "active.auction":
             # updating tender data with the fill private and public data
