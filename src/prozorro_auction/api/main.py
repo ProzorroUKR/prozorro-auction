@@ -19,4 +19,4 @@ def create_application():
 
 
 if __name__ == '__main__':
-    web.run_app(create_application(), port=API_PORT)
+    web.run_app(create_application(), port=API_PORT, print=None)

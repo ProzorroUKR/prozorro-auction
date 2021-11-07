@@ -8,16 +8,23 @@ stages:
 variables:
   CI_TAG: ci-$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHORT_SHA
   REPO_URL: http://repo-staging.dc.prozorro.gov.ua/repos/helm/
+  MONGODB_ROOT_PASSWORD: example
+  MONGODB_REPLICA_SET_MODE: primary
+  MONGODB_REPLICA_SET_NAME: rs0
+  MONGODB_REPLICA_SET_KEY: replicaSetKey
 
 test:
   image: docker-registry.prozorro.gov.ua/docker/images/python:3.8-alpine3.14
   stage: test
   tags:
     - kube-dev
+  services:
+    - bitnami/mongodb:latest
   before_script:
     - pip install -r requirements.txt
     - pip install -e .
     - pip install pytest pytest-asyncio coverage
+    - echo '127.0.0.1  mongo' >> /etc/hosts
   script:
     - cd tests && coverage run -m pytest
     - coverage report
