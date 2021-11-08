@@ -1,4 +1,4 @@
-from prozorro_auction.settings import logger, API_HEADERS
+from prozorro_auction.settings import API_HEADERS
 from datetime import datetime, timedelta
 from prozorro_auction.chronograph.requests import get_tender_documents, get_tender_bids
 from prozorro_auction.chronograph.tasks import upload_audit_document, send_auction_results
@@ -10,6 +10,9 @@ from prozorro_auction.chronograph.model import (
 )
 from prozorro_auction.settings import LATENCY_TIME
 import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def tick_auction(auction):
@@ -20,17 +23,17 @@ async def tick_auction(auction):
     next_stage_index = current_stage + 1
     if next_stage_index >= len(stages):
         auction["timer"] = None
-        return logger.error(f"Chronograph tries to update {auction['_id']} "
+        return logger.error(f"Chronograph tries to update auction "
                             f"to a non-existed stage {next_stage_index}")
 
     next_stage = stages[next_stage_index]
 
     if next_stage["start"] > now:
-        return logger.error(f"Chronograph tries to update {auction['_id']} too early {next_stage['start']}")
+        return logger.error(f"Chronograph tries to update auction too early {next_stage['start']}")
 
     if next_stage["start"] + timedelta(seconds=LATENCY_TIME) < now:
         auction.update({"current_stage": -101, "results": [], "timer": None})
-        return logger.info(f"Next stage in auction {auction['_id']} has not started and auction will be rescheduled")
+        return logger.info(f"Next stage in auction auction has not started and auction will be rescheduled")
 
     await run_stage_methods(auction, stages, current_stage)
 

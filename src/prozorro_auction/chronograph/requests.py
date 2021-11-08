@@ -1,8 +1,11 @@
-from prozorro_auction.settings import DS_URL, DS_HEADERS, CONNECTION_ERROR_INTERVAL, logger
+from prozorro_auction.settings import DS_URL, DS_HEADERS, CONNECTION_ERROR_INTERVAL
 from prozorro_auction.exceptions import RequestRetryException, RetryException
 from json.decoder import JSONDecodeError
 from prozorro_auction.base_requests import request_tender
 import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 # DS REQUESTS

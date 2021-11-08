@@ -4,7 +4,9 @@ from prozorro_auction.chronograph.requests import (
 from prozorro_auction.chronograph.model import (
     build_audit_document, build_results_bids_patch, get_doc_id_from_filename
 )
-from prozorro_auction.settings import logger
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 async def upload_audit_document(session, auction, documents):
@@ -22,6 +24,6 @@ async def send_auction_results(session, auction, tender_bids, request_tender_met
     data = build_results_bids_patch(auction, tender_bids)
     await post_tender_auction(session, auction["tender_id"], auction["lot_id"], data, request_tender_method)
     logger.info(
-        f"Auction {auction['_id']} results sent: {data}",
+        f"Auction results sent: {data}",
         extra={"MESSAGE_ID": "AUCTION_WORKER_API_APPROVED_DATA"}
     )

@@ -313,7 +313,7 @@ def get_auctions_from_tender(tender):
     for auction in get_data_from_tender(tender):
         auction["start_at"] = convert_datetime(auction["start_at"])
         if auction["start_at"] < get_now():
-            logger.info(f"Skipping {auction['_id']} start date {auction['start_at']} in the past")
+            logger.info(f"Skipping: start date {auction['start_at']} in the past")
         else:
             auction["stages"] = build_stages(auction)
             auction["current_stage"] = -1
