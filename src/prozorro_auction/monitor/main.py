@@ -7,12 +7,17 @@ from prozorro_auction.monitor.settings import (
 )
 from prozorro_auction.monitor.storage import get_minimum_timer_auction, get_auction_count_by_timer
 from prozorro_auction.monitor.metrics import main as metrics_main
-from prozorro_auction.settings import logger, SENTRY_DSN, TZ
+from prozorro_auction.settings import SENTRY_DSN, TZ
 from prozorro_auction.utils.base import get_now
+from prozorro_auction.logging import setup_logging, update_log_context
 import asyncio
 import signal
 import sentry_sdk
 import pytz
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 KEEP_RUNNING = True
@@ -82,6 +87,9 @@ if __name__ == '__main__':
     configure_signals()
     if SENTRY_DSN:
         sentry_sdk.init(dsn=SENTRY_DSN)
+
+    setup_logging()
+    update_log_context(SYSLOG_IDENTIFIER="AUCTION_MONITORING")
 
     loop = asyncio.get_event_loop()
 

@@ -1,8 +1,12 @@
 from prozorro_auction.storage import get_mongodb_collection
-from prozorro_auction.settings import logger, MONGODB_ERROR_INTERVAL
+from prozorro_auction.settings import MONGODB_ERROR_INTERVAL
 from pymongo.errors import PyMongoError
 from pymongo import ASCENDING
+import logging
 import asyncio
+
+
+logger = logging.getLogger(__name__)
 
 
 async def get_minimum_timer_auction(now):

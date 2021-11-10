@@ -1,5 +1,5 @@
 from prozorro_auction.constants import ProcurementMethodType
-from prozorro_auction.settings import logger
+from prozorro_auction.logging import update_log_context, log_context
 from prozorro_auction.api.storage import (
     read_auction_list,
     get_auction,
@@ -19,8 +19,9 @@ from prozorro_auction.api.model import (
 from aiohttp import web
 from prozorro_auction.utils.base import get_now
 import asyncio
+import logging
 
-
+logger = logging.getLogger(__name__)
 routes = web.RouteTableDef()
 
 
@@ -47,6 +48,8 @@ async def get_auction_by_id(request):
 async def auction_log(request):
     data = await request.json()
     log_msg = data.pop("MESSAGE", "Auction client log")
+    if "ERROR_DATA" in data:
+        data["ERROR_DATA"] = str(data["ERROR_DATA"])
     data["SYSLOG_IDENTIFIER"] = "AUCTION_CLIENT"
     data["REMOTE_ADDR"] = get_remote_addr(request)
     logger.info(log_msg, extra=data)
@@ -96,13 +99,14 @@ async def post_bid(request):
         else:
             log_msg = f"Bidder {bidder_id} cancelled their bid"
 
-    extra = dict()
-    extra["SYSLOG_IDENTIFIER"] = "AUCTION_WORKER"
-    extra["REMOTE_ADDR"] = get_remote_addr(request)
-    extra["BIDDER_ID"] = bidder_id
-    extra["CLIENT_ID"] = client_id
-    logger.info(log_msg, extra=extra)
-
+    logger.info(
+        log_msg,
+        extra={
+            "REMOTE_ADDR": get_remote_addr(request),
+            "BIDDER_ID": bidder_id,
+            "CLIENT_ID": client_id,
+        }
+    )
     resp_data = get_bid_response_data(auction, bid)
     return json_response(resp_data, status=200)
 
@@ -122,17 +126,14 @@ async def check_authorization(request):
             raise web.HTTPUnauthorized(text="hash is invalid")
 
         resp_data = get_bid_response_data(auction, bid)
-
-        extra = dict()
-        extra["SYSLOG_IDENTIFIER"] = "AUCTION_WORKER"
-        extra["REMOTE_ADDR"] = get_remote_addr(request)
-        extra["BIDDER_ID"] = bidder_id
-        extra["CLIENT_ID"] = client_id
-        log_msg = (
-            f"Bidder {bidder_id} from {client_id} "
-            f"has passed check authorization: {resp_data}"
+        logger.info(
+            f"Bidder {bidder_id} from {client_id} has passed check authorization: {resp_data}",
+            extra={
+                "REMOTE_ADDR": get_remote_addr(request),
+                "BIDDER_ID": bidder_id,
+                "CLIENT_ID": client_id,
+            }
         )
-        logger.info(log_msg, extra=extra)
 
         if "coeficient" in bid:
             resp_data["coeficient"] = str(bid["coeficient"])
@@ -182,24 +183,25 @@ class AuctionFeed:
 
         async for auction in watch_changed_docs():
             auction_id = auction["_id"]
-            logger.info(f"Capture change of {auction_id}")
+            with log_context(AUCTION_ID=auction_id):
+                logger.info(f"Capture change of auction")
 
-            if auction_id in self._auctions:
-                save_doc = self._auctions[auction_id]["doc"]
-                if save_doc is None or save_doc["modified"] != auction["modified"]:
-                    self._auctions[auction_id]["doc"] = auction
-                    subscribers = self._auctions[auction_id]["subscribers"]
-                    dead_sockets = []
-                    for socket, subscriber in subscribers.items():
-                        if subscriber.full():
-                            dead_sockets.append(socket)
-                            continue
-                        subscriber.put_nowait(1)  # putting any object is fine
+                if auction_id in self._auctions:
+                    save_doc = self._auctions[auction_id]["doc"]
+                    if save_doc is None or save_doc["modified"] != auction["modified"]:
+                        self._auctions[auction_id]["doc"] = auction
+                        subscribers = self._auctions[auction_id]["subscribers"]
+                        dead_sockets = []
+                        for socket, subscriber in subscribers.items():
+                            if subscriber.full():
+                                dead_sockets.append(socket)
+                                continue
+                            subscriber.put_nowait(1)  # putting any object is fine
 
-                    for socket in dead_sockets:
-                        await socket.close()
-                        logger.info('Force close of socket that is not reading data')
-                        subscribers.pop(socket)
+                        for socket in dead_sockets:
+                            await socket.close()
+                            logger.info('Force close of socket that is not reading data')
+                            subscribers.pop(socket)
 
 
 AUCTION_FEED = None
@@ -228,12 +230,12 @@ async def ws_handler(request):
     await ws.prepare(request)
 
     auction_id = request.match_info['auction_id']
-    log_extra = {"auction_id": auction_id}
-    logger.info('Feed client connected', extra=log_extra)
+    update_log_context(AUCTION_ID=auction_id)
+    logger.info('Feed client connected')
 
     loop = asyncio.get_event_loop()
     t = loop.create_task(ping_ws(ws))
-    logger.info(f'Ping launched {t}', extra=log_extra)
+    logger.info(f'Ping launched {t}')
 
     auction_feed = get_auction_feed()
     feed = auction_feed.subscribe(auction_id, ws)

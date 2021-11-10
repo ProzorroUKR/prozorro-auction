@@ -1,13 +1,15 @@
 from yaml import dump
 from fractions import Fraction
-
-from prozorro_auction.settings import logger
 from prozorro_auction.utils.costs import (
     float as float_costs_utils,
     fraction as fraction_costs_utils,
 )
 from prozorro_auction.utils.base import get_now, datetime_to_str, copy_dict
 from prozorro_auction.constants import AuctionType
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def sort_bids(bids):

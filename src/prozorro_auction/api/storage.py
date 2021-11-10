@@ -1,11 +1,14 @@
 from prozorro_auction.storage import get_mongodb_collection
-from prozorro_auction.settings import logger, MONGODB_ERROR_INTERVAL
+from prozorro_auction.settings import MONGODB_ERROR_INTERVAL
 from prozorro_auction.utils.base import get_now
 from pymongo import ASCENDING
 from pymongo.collection import ReturnDocument
 from pymongo.errors import PyMongoError
 from aiohttp import web
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 LIST_FIELDS = (
     "_id", "title", "title_en", "start_at", "procurementMethodType", "tenderID"

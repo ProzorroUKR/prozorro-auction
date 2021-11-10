@@ -1,5 +1,5 @@
 from aiohttp import web
-from prozorro_auction.settings import TZ, logger
+from prozorro_auction.settings import TZ
 from datetime import datetime
 import json
 import pytz
