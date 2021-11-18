@@ -101,9 +101,6 @@ def _validate_amount(auction, auction_stage, bid, data):
         )
         if amount > max_allowed:
             raise ValidationError(u'Too high value')
-    else:
-        message = f"Auction type {auction_type.value} is not supported"
-        raise ValidationError(message)
 
     return amount
 
@@ -179,9 +176,6 @@ def _validate_esco_fields(auction, auction_stage, bid, data):
             raise ValidationError(message)
     elif auction_type == AuctionType.LCC:
         message = f"Auction type {auction_type.value} is not supported for esco procurement method type"
-        raise ValidationError(message)
-    else:
-        message = f"Auction type {auction_type.value} is not supported"
         raise ValidationError(message)
 
     esco_bid_fields = dict(

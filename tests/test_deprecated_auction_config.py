@@ -331,7 +331,8 @@ def test_is_tender_processed_by_auction10():
         }
     }
 )
-def test_is_tender_processed_by_auction11():
+@patch("prozorro_auction.deprecated_auction_config_filter.logger.error")
+def test_is_tender_processed_by_auction11(mock_logger_error):
     tender = {
         "id": "12345ffc415e4d57ad7046aacc91b6e1",
         "procurementMethodType": "belowThreshold",
@@ -346,10 +347,13 @@ def test_is_tender_processed_by_auction11():
     expected_result = False
 
     assert expected_result == actual_result
+    mock_logger_error.assert_called_once_with("There is no {} field in tender {}".format("unknown_field", tender["id"]))
 
     actual_result = is_tender_processed_by_auction(tender, auction_type='deprecated')
     expected_result = True
 
+    assert mock_logger_error.call_count == 2
+    mock_logger_error.assert_called_with("There is no {} field in tender {}".format("unknown_field", tender["id"]))
     assert expected_result == actual_result
 
 
@@ -359,7 +363,8 @@ def test_is_tender_processed_by_auction11():
         }
     }
 )
-def test_is_tender_processed_by_auction12():
+@patch("prozorro_auction.deprecated_auction_config_filter.logger.error")
+def test_is_tender_processed_by_auction12(mock_logger_error):
     tender = {
         "id": "12345ffc415e4d57ad7046aacc91b6e1",
         "procurementMethodType": "belowThreshold",
@@ -369,8 +374,11 @@ def test_is_tender_processed_by_auction12():
     expected_result = False
 
     assert expected_result == actual_result
+    mock_logger_error.assert_called_once_with("There is no tenderPeriod startDate in tender {}".format(tender["id"]))
 
     actual_result = is_tender_processed_by_auction(tender, auction_type='deprecated')
     expected_result = True
 
+    assert mock_logger_error.call_count == 2
+    mock_logger_error.assert_called_with("There is no tenderPeriod startDate in tender {}".format(tender["id"]))
     assert expected_result == actual_result

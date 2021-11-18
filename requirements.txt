@@ -5,7 +5,7 @@ iso8601>=0.1.12,<1
 sentry-sdk>=0.14.4,<1
 pytz
 pyyaml
-python-dateutil==2.6.1
+python-dateutil==2.8.2
 pytest-asyncio
 mock==4.0.3
 git+git://github.com/ProzorroUKR/prozorro_crawler.git@1.2.1#egg=prozorro_crawler
