@@ -68,9 +68,9 @@ async def test_get_tender_document_for_deprecated_auction(caplog):
     tender = {"id": tender_data["id"]}
     with patch("prozorro_auction.databridge.requests.is_tender_processed_by_auction", lambda *args, **kwargs: False):
         with pytest.raises(SkipException):
-            await get_tender_document(session, tender)
-            assert caplog.text == f"Skip processing {tender['id']} as that tender is for deprecated auction"
-
+            with patch("prozorro_auction.databridge.requests.logger.info") as mock_logger_info:
+                await get_tender_document(session, tender)
+    mock_logger_info.assert_called_once_with(f"Skip processing {tender['id']} as that tender is for deprecated auction")
 
 
 @pytest.mark.asyncio
@@ -96,7 +96,8 @@ async def test_get_tender_document_without_bids(caplog):
     ])
 
     tender = {"id": "test_id"}
-    with pytest.raises(SkipException):
-        await get_tender_document(session, tender)
-        assert caplog.text == f"Skip processing {tender['id']} as there are no bids"
 
+    with pytest.raises(SkipException):
+        with patch("prozorro_auction.databridge.requests.logger.info") as mock_logger_info:
+            await get_tender_document(session, tender)
+    mock_logger_info.assert_called_once_with(f"Skip processing {tender_data['id']} as there are no bids")
