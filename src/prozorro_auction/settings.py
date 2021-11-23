@@ -58,7 +58,7 @@ assert AUCTION_HOST.startswith("http")
 QUICK_MODE_FAST_AUCTION_START_AFTER = int(os.getenv("QUICK_MODE_FAST_AUCTION_START_AFTER", 5))
 
 
-LATENCY_TIME = float(os.getenv("LATENCY_TIME", 10 * 60))
+LATENCY_TIME = float(os.getenv("LATENCY_TIME", 2 * 60))
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT")
 
