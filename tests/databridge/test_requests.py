@@ -31,46 +31,12 @@ async def test_get_tender_document_for_new_auction():
         auction_response,
     ])
 
-    with patch("prozorro_auction.databridge.requests.is_tender_processed_by_auction", lambda *args, **kwargs: True):
-        tender = {"id": tender_data["id"]}
-        tender_data["submissionMethodDetails"] = "quick"
-
-        tender = await get_tender_document(session, tender)
-        tender_data["bids"] = test_bids
-        assert tender_data == tender
-
-
-@pytest.mark.asyncio
-async def test_get_tender_document_for_deprecated_auction(caplog):
-    session = MagicMock()
-    tender_data = deepcopy(test_tender_data)
-    tender_data["id"] = "test_id"
-
-    tender_response = MagicMock(
-        status=200,
-        json=AsyncMock(
-            return_value={"data": tender_data}
-        )
-    )
-    auction_response = MagicMock(
-        status=200,
-        json=AsyncMock(
-            return_value={"data": {"bids": test_bids}}
-        )
-    )
-    session.get = AsyncMock(side_effect=[
-        tender_response,
-        auction_response,
-        tender_response,
-        auction_response,
-    ])
-
     tender = {"id": tender_data["id"]}
-    with patch("prozorro_auction.databridge.requests.is_tender_processed_by_auction", lambda *args, **kwargs: False):
-        with pytest.raises(SkipException):
-            with patch("prozorro_auction.databridge.requests.logger.info") as mock_logger_info:
-                await get_tender_document(session, tender)
-    mock_logger_info.assert_called_once_with(f"Skip processing {tender['id']} as that tender is for deprecated auction")
+    tender_data["submissionMethodDetails"] = "quick"
+
+    tender = await get_tender_document(session, tender)
+    tender_data["bids"] = test_bids
+    assert tender_data == tender
 
 
 @pytest.mark.asyncio
