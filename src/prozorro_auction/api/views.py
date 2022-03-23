@@ -11,6 +11,7 @@ from prozorro_auction.api.utils import (
     json_dumps,
     get_remote_addr,
 )
+from prozorro_auction.api.mask import mask_data
 from prozorro_auction.api.model import (
     get_posted_bid,
     get_bid_response_data,
@@ -34,6 +35,10 @@ async def ping(request):
 async def auction_list(request):
     _skip_param = int(request.query.get('page', 1)) - 1
     list_auction = await read_auction_list(_skip_param)
+    # mask data
+    for a in list_auction:
+        mask_data(a)
+        a.pop("procuringEntity", "")
     return json_response(list_auction, status=200)
 
 
@@ -41,6 +46,7 @@ async def auction_list(request):
 async def get_auction_by_id(request):
     _id = request.match_info['auction_id']
     auction = await get_auction(_id)
+    mask_data(auction)
     return json_response(auction, status=200)
 
 
