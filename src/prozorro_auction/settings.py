@@ -70,3 +70,6 @@ def get_deprecated_auction_config_path():
 DEPRECATED_AUCTION_CONFIG_PATH = os.environ.get(
     "DEPRECATED_AUCTION_CONFIG_PATH", get_deprecated_auction_config_path()
 )
+
+
+MASK_OBJECT_DATA = bool(os.environ.get("DEFAULT_MASK_OBJECT_DATA", False))
