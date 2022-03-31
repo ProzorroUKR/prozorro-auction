@@ -18,6 +18,7 @@ GET_FIELDS = (
     "_id", "auction_type", "timer",
     "procurementMethodType", "tenderID", "title", "title_en", "procuringEntity", "items", "features",
     "start_at", "stages", "current_stage", "initial_bids", "results", "modified", "minimalStep",
+    "lot",
     "minimalStepPercentage", "noticePublicationDate", "NBUdiscountRate", "value" # esco
 )
 
