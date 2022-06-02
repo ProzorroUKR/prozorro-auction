@@ -33,7 +33,7 @@ async def schedule_auction(session, auction, tender):
                     return
 
                 min_time, max_time = sorted((pytz.utc.localize(saved_auction["start_at"]), auction["start_at"]))
-                if (max_time - min_time).seconds < 1:
+                if (max_time - min_time).total_seconds() < 1:
                     logger.info(f"Skipping auction already scheduled at {auction['start_at']}")
                     return
 
