@@ -111,7 +111,6 @@ async def chronograph_loop():
                     chronograph_total_time_summary.observe(total_time)
                     chronograph_processing_time_summary.observe(processing_time)
         else:
-            logger.debug('No auctions needs to be updated. nooping')
             await asyncio.sleep(1)
 
 
