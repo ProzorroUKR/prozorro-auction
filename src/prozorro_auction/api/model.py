@@ -16,7 +16,7 @@ MAX_CONTRACT_DURATION = 15
 
 
 def get_bid_by_bidder_id(auction, bidder_id):
-    for bid in auction["bids"]:
+    for bid in auction.get("bids", ""):
         if bid["id"] == bidder_id:
             return bid
     else:
