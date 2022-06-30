@@ -17,31 +17,35 @@ logger = logging.getLogger(__name__)
 async def process_tender_data(session, tender):
     procurement_method_type = tender.get("procurementMethodType")
     with log_context(TENDER_ID=tender['id']):
-        if procurement_method_type in PROCUREMENT_TYPES:
-            tasks = []
-            if tender["status"] == "active.auction":
-                # updating tender data with the fill private and public data
-                try:
-                    tender = await get_tender_document(session, tender)
-                except SkipException:
-                    return   # logging should be done just before raising this exc
-                # processing auctions
-                for auction in get_auctions_from_tender(tender):
-                    tasks.append(schedule_auction(session, auction, tender))
+        try:
+            if procurement_method_type in PROCUREMENT_TYPES:
+                tasks = []
+                if tender["status"] == "active.auction":
+                    # updating tender data with the fill private and public data
+                    try:
+                        tender = await get_tender_document(session, tender)
+                    except SkipException:
+                        return   # logging should be done just before raising this exc
+                    # processing auctions
+                    for auction in get_auctions_from_tender(tender):
+                        tasks.append(schedule_auction(session, auction, tender))
 
-            elif tender["status"] == "cancelled":
-                logger.info(f"Cancelling auctions")
-                for auction in get_canceled_auctions_from_tender(tender):
+                elif tender["status"] == "cancelled":
+                    logger.info(f"Cancelling auctions")
+                    for auction in get_canceled_auctions_from_tender(tender):
+                        tasks.append(
+                            update_auction(auction, insert=False)
+                        )
+                elif tender["status"] == "active.qualification":  # publish bidder names
                     tasks.append(
-                        update_auction(auction, insert=False)
+                        reveal_auction_names(session, tender["id"])
                     )
-            elif tender["status"] == "active.qualification":  # publish bidder names
-                tasks.append(
-                    reveal_auction_names(session, tender["id"])
-                )
-            await asyncio.gather(*tasks)
-        else:
-            logger.info(f"Skipping as {procurement_method_type} not in PROCUREMENT_TYPES")
+                await asyncio.gather(*tasks)
+            else:
+                logger.info(f"Skipping as {procurement_method_type} not in PROCUREMENT_TYPES")
+        except Exception as e:
+            logger.error(f"Unexpected error {e}")
+            raise
 
 
 async def auction_data_handler(session, items):
