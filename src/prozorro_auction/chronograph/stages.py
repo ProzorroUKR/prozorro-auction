@@ -31,7 +31,10 @@ async def tick_auction(auction):
     if next_stage["start"] > now:
         return logger.error(f"Chronograph tries to update auction too early {next_stage['start']}")
 
-    if next_stage["start"] + timedelta(seconds=LATENCY_TIME) < now:
+    if (
+        next_stage["start"] + timedelta(seconds=LATENCY_TIME) < now
+        and next_stage["type"] not in ("pre_announcement", "announcement")
+    ):
         auction.update({"current_stage": -101, "results": [], "timer": None})
         return logger.info(f"Next stage in auction auction has not started and auction will be rescheduled")
 
