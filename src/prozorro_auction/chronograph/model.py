@@ -15,6 +15,9 @@ logger = logging.getLogger(__name__)
 def sort_bids(bids):
     is_esco = is_esco_bids(bids)
     auction_type = get_bids_auction_type(bids)
+    if auction_type == AuctionType.MIXED:
+        def get_amount(b):
+            return b["amount_weighted"]
     if auction_type == AuctionType.MEAT:
         def get_amount(b):
             return Fraction(b["amount_features"])
@@ -43,7 +46,9 @@ def sort_bids(bids):
 
 
 def get_bid_auction_type(bid):
-    if bid.get("amount_features"):
+    if bid.get("amount_weighted") and (bid.get("addition") or bid.get("denominator")):
+        return AuctionType.MIXED
+    elif bid.get("amount_features"):
         return AuctionType.MEAT
     elif bid.get("amount_weighted"):
         return AuctionType.LCC
@@ -54,6 +59,7 @@ def get_bid_auction_type(bid):
 def get_bids_auction_type(bids):
     auction_types = list(map(get_bid_auction_type, bids))
     auction_types_priority = [
+        AuctionType.MIXED,
         AuctionType.MEAT,
         AuctionType.LCC,
         AuctionType.DEFAULT,
@@ -197,7 +203,8 @@ def copy_bid_stage_fields(bid, stage):
 
     meat_fields = ("amount_features", "coeficient")
     lcc_fields = ("amount_weighted", "non_price_cost")
-    for f in meat_fields + lcc_fields:
+    mixed_fields = ("denominator", "addition")
+    for f in meat_fields + lcc_fields + mixed_fields:
         if f in bid:
             fields[f] = bid[f]
 

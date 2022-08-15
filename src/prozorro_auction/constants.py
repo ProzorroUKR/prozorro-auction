@@ -5,6 +5,7 @@ class AuctionType(Enum):
     DEFAULT = "default"
     MEAT = "meat"
     LCC = "lcc"
+    MIXED = "mixed"
 
 
 class ProcurementMethodType(Enum):

@@ -35,7 +35,7 @@ class AuctionDefaultBidImporter(AbstractAuctionBidImporter):
         :param value_container: lot values item data in case of multilot or bid data otherwise
         :return: auction bid data
         """
-        value_container = value_container if value_container else self._bid
+        value_container = value_container or self._bid
         if "date" not in value_container:
             logger.error("'date' not found in value_container",
                          extra={"MESSAGE_ID": "DATE_NOT_FOUND"})
@@ -72,7 +72,7 @@ class AuctionMEATBidImporter(AuctionDefaultBidImporter):
         :param value_container: lot values item data in case of multilot or bid data otherwise
         :return: auction bid data
         """
-        value_container = value_container if value_container else self._bid
+        value_container = value_container or self._bid
         bid_data = super(AuctionMEATBidImporter, self).import_auction_bid_data(value_container=value_container)
         bid_data["parameters"] = self._parameters
         bid_data["coeficient"] = self._calculate_coeficient()
@@ -129,7 +129,7 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
         :param value_container: lot values item data in case of multilot or bid data otherwise
         :return: auction bid data
         """
-        value_container = value_container if value_container else self._bid
+        value_container = value_container or self._bid
         bid_data = super(AuctionLCCBidImporter, self).import_auction_bid_data(value_container=value_container)
         bid_data["responses"] = self._responses
         non_price_cost = self._calculate_non_price_cost()
@@ -170,6 +170,42 @@ class AuctionLCCBidImporter(AuctionDefaultBidImporter):
         return value_container["value"]["amount"] + non_price_cost
 
 
+class AuctionMixedBidImporter(AuctionDefaultBidImporter):
+    """
+    Create auction bid data for MIXED auction.
+    """
+
+    def __init__(self, bid: dict, **kwargs):
+        """
+        :param bid: bid data
+        :param features: features data list
+        """
+        super().__init__(bid, **kwargs)
+
+        self._features = kwargs.get("features", None)
+        self._criteria = kwargs.get("criteria", None)
+
+    def import_auction_bid_data(self, value_container: Optional[dict] = None) -> dict:
+        """
+        Create auction bid data for Mixed auction.
+
+        :param value_container: lot values item data in case of multilot or bid data otherwise
+        :return: auction bid data
+        """
+        value_container = value_container or self._bid
+        bid_data = super().import_auction_bid_data(value_container=value_container)
+        weighted_value = value_container["weightedValue"]
+
+        # bid_data["weighted_value"] = weighted_value
+        bid_data["amount_weighted"] = weighted_value["amount"]
+        if "denominator" in weighted_value:
+            bid_data["denominator"] = weighted_value["denominator"]
+        if "addition" in weighted_value:
+            bid_data["addition"] = weighted_value["addition"]
+
+        return bid_data
+
+
 class AuctionDefaultBidImporterBuilder(object):
 
     def __call__(self, bid: dict) -> AuctionDefaultBidImporter:
@@ -204,6 +240,20 @@ class AuctionLCCBidImporterBuilder(object):
         return dict(criteria=criteria)
 
 
+class AuctionMixedBidImporterBuilder(object):
+    def __init__(self, auction: dict) -> None:
+        self._auction = auction
+
+    def __call__(self, bid: dict) -> AuctionMixedBidImporter:
+        importer_kwargs = self._build_mixed_kwargs(bid)
+        return AuctionMixedBidImporter(bid, **importer_kwargs)
+
+    def _build_mixed_kwargs(self, bid: dict) -> dict:
+        features = self._auction["features"]
+        criteria = self._auction["criteria"]
+        return dict(features=features, criteria=criteria)
+
+
 class AuctionBidImporterFactory(object):
 
     def __init__(self, auction: dict) -> None:
@@ -217,6 +267,7 @@ class AuctionBidImporterFactory(object):
             AuctionType.DEFAULT: AuctionDefaultBidImporterBuilder(),
             AuctionType.MEAT: AuctionMEATBidImporterBuilder(auction),
             AuctionType.LCC: AuctionLCCBidImporterBuilder(auction),
+            AuctionType.MIXED: AuctionMixedBidImporterBuilder(auction),
         }
 
     def create(self, bid: dict) -> AbstractAuctionBidImporter:
