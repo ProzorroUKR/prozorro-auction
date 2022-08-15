@@ -534,6 +534,50 @@ test_bids_lcc[0]["requirementResponses"] = test_resposes_lcc
 test_bids_lcc[1]["requirementResponses"] = test_resposes_lcc
 test_tender_data_lcc["bids"] = test_bids_lcc
 
+
+# Tender mixed auction
+
+
+test_tender_data_mixed = deepcopy(test_tender_data)
+test_tender_data_mixed["criteria"] = test_criteria_lcc
+
+test_bids_mixed = deepcopy(test_bids)
+test_bids_mixed[0]["requirementResponses"] = test_resposes_lcc
+test_bids_mixed[1]["requirementResponses"] = test_resposes_lcc
+
+test_item_features = deepcopy(test_item)
+test_item_features["id"] = test_item_features_id
+test_tender_data_mixed["items"] = [test_item_features]
+test_tender_data_mixed["features"] = test_features
+
+test_bids_mixed_parameters = deepcopy(test_bids_mixed)
+test_bids_mixed_parameters[0]["parameters"] = [
+    {
+        "code": i["code"],
+        "value": 0.1
+    }
+    for i in test_tender_data_features["features"]
+]
+test_bids_mixed_parameters[1]["parameters"] = [
+    {
+        "code": i["code"],
+        "value": 0.15
+    }
+    for i in test_tender_data_features["features"]
+]
+
+for bid in test_bids_mixed_parameters:
+    params_sum = sum(i["value"] for i in bid["parameters"])
+    denominator = 1 / (1 - params_sum)
+    addition = 100.0
+    bid["weightedValue"] = {
+        "amount": (bid["value"]["amount"] / denominator) + addition,
+        "denominator": denominator,
+        "addition": addition,
+    }
+
+test_tender_data_mixed["bids"] = test_bids_mixed_parameters
+
 NBU_DISCOUNT_RATE = 0.22
 
 test_tender_data_esco = deepcopy(test_tender_data)

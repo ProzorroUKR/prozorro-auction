@@ -50,6 +50,8 @@ def get_posted_bid(auction, bid, hash_value, data):
 
 
 def get_stage_auction_type(stage):
+    if stage.get("amount_weighted") and (stage.get("denominator") or stage.get("addition")):
+        return AuctionType.MIXED
     if stage.get("amount_features"):
         return AuctionType.MEAT
     elif stage.get("amount_weighted"):
@@ -93,6 +95,19 @@ def _validate_amount(auction, auction_stage, bid, data):
             amount_weighted=auction_stage['amount_weighted'],
             non_price_cost=bid["non_price_cost"],
             reverse=True,
+        )
+        max_allowed = float_costs_utils.amount_allowed(
+            amount=calculated_amount,
+            min_step_amount=auction['minimalStep']['amount'],
+            reverse=True,
+        )
+        if amount > max_allowed:
+            raise ValidationError(u'Too high value')
+    elif auction_type == AuctionType.MIXED:
+        calculated_amount = float_costs_utils.amount_from_mixed_weighted(
+            amount_weighted=auction_stage['amount_weighted'],
+            denominator=bid.get("denominator", 1),
+            addition=bid.get("addition", 0),
         )
         max_allowed = float_costs_utils.amount_allowed(
             amount=calculated_amount,

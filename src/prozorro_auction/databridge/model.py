@@ -97,6 +97,7 @@ def get_bids_data(auction, active_bids, lot=None):
                 status = lot_value.get("status", "active")
                 if lot_value["relatedLot"] == lot["id"] and status == "active":
                     bids_data.append(importer.import_auction_bid_data(lot_value))
+                    # TODO: work with lots, maybe we should add weightedValue to lotValues
         else:
             bids_data.append(importer.import_auction_bid_data())
     return bids_data
@@ -199,6 +200,7 @@ def filter_items_keys(items):
         "relatedLot",
     ))
 
+
 def filter_active_bids(bids):
     """
     Filter bids with active status.
@@ -219,11 +221,14 @@ def get_auction_type(auction, tender):
     - default
     - meat (if tender has features)
     - lcc (if awardCriteria equal to lifeCycleCost)
+    - mixed (if bids has weightedValue)
 
     :param auction:
     :param tender:
     :return:
     """
+    if "weightedValue" in tender["bids"][0]:
+        return AuctionType.MIXED.value
     if tender.get("awardCriteria", "") == "lifeCycleCost" and auction["criteria"]:
         return AuctionType.LCC.value
     if auction["features"]:

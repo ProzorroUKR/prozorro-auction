@@ -84,7 +84,7 @@ async def post_bid(request):
                 f"Bidder {bidder_id} with client_id {client_id} placed bid "
                 f"with total amount {posted_bid['amountPerformance']}, "
                 f"yearly payments percentage = {posted_bid['yearlyPaymentsPercentage']}, "
-                f"contract duraction years = {posted_bid['contractDuration']['years']}, "
+                f"contract duration years = {posted_bid['contractDuration']['years']}, "
                 f"contract duration days = {posted_bid['contractDuration']['days']} "
                 f"in {get_now().isoformat()}"
             )  # "let me speak from my heart"
