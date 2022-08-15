@@ -144,6 +144,16 @@ def publish_bids_made_in_current_stage(auction):
                                 non_price_cost=bid["non_price_cost"],
                                 reverse=True,
                             )
+                    elif auction["auction_type"] == AuctionType.MIXED.value:
+                        if is_esco_bid(bid):
+                            raise NotImplementedError()
+                        else:
+                            bid['amount_weighted'] = float_costs_utils.amount_to_mixed_weighted(
+                                amount=bid["value"]['amount'],
+                                denominator=bid.get("denominator", 1),
+                                addition=bid.get("addition", 0),
+                            )
+                    # TODO: maybe for MIXED should be updated
                     # update public stage fields
                     copy_bid_stage_fields(bid, stage)
                     stage["changed"] = True
@@ -192,6 +202,16 @@ def _build_bidder_object(bid):
             amount_weighted=bid["amount_weighted"],
             non_price_cost=bid["non_price_cost"],
         )
+    elif auction_type == AuctionType.MIXED:
+        if is_esco:
+            raise NotImplementedError()
+
+        if "denominator" in bid:
+            result["denominator"] = bid["denominator"]
+
+        if "addition" in bid:
+            result["addition"] = bid["addition"]
+        result["amount_weighted"] = bid["amount_weighted"]
     return result
 
 
@@ -287,6 +307,11 @@ def build_audit_document(auction):
             if auction["auction_type"] == AuctionType.LCC.value:
                 timeline[label][f"turn_{turn}"]["amount_weighted"] = stage.get("amount_weighted")
                 timeline[label][f"turn_{turn}"]["non_price_cost"] = stage.get("non_price_cost")
+
+            if auction["auction_type"] == AuctionType.MIXED.value:
+                timeline[label][f"turn_{turn}"]["amount_weighted"] = stage.get("amount_weighted")
+                timeline[label][f"turn_{turn}"]["addition"] = stage.get("addition")
+                timeline[label][f"turn_{turn}"]["denominator"] = stage.get("denominator")
 
     # safe_dump couldn't convert [<class 'bson.int64.Int64'>, 2238300000]
     file_data = dump(audit, default_flow_style=False, encoding="utf-8", allow_unicode=True)
