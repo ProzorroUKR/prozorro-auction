@@ -141,6 +141,12 @@ async def check_authorization(request):
         if "non_price_cost" in bid:
             resp_data["non_price_cost"] = bid["non_price_cost"]
 
+        if "addition" in bid:
+            resp_data["addition"] = bid["addition"]
+
+        if "denominator" in bid:
+            resp_data["denominator"] = bid["denominator"]
+
         return json_response(resp_data, status=200)
     else:
         raise web.HTTPUnauthorized(text="bidder_id or hash not provided")
