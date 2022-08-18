@@ -97,7 +97,6 @@ def get_bids_data(auction, active_bids, lot=None):
                 status = lot_value.get("status", "active")
                 if lot_value["relatedLot"] == lot["id"] and status == "active":
                     bids_data.append(importer.import_auction_bid_data(lot_value))
-                    # TODO: work with lots, maybe we should add weightedValue to lotValues
         else:
             bids_data.append(importer.import_auction_bid_data())
     return bids_data
@@ -227,7 +226,9 @@ def get_auction_type(auction, tender):
     :param tender:
     :return:
     """
-    if "weightedValue" in tender["bids"][0]:
+    is_weighted_value_in_bid = "weightedValue" in tender["bids"][0]
+    is_weighted_value_in_lot_values = "weightedValue" in tender["bids"][0].get("lotValues", [{}])[0]
+    if is_weighted_value_in_bid or is_weighted_value_in_lot_values:
         return AuctionType.MIXED.value
     if tender.get("awardCriteria", "") == "lifeCycleCost" and auction["criteria"]:
         return AuctionType.LCC.value
