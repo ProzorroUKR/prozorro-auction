@@ -197,9 +197,8 @@ class AuctionMixedBidImporter(AuctionDefaultBidImporter):
         weighted_value = value_container["weightedValue"]
 
         # bid_data["weighted_value"] = weighted_value
-        bid_data["amount_weighted"] = weighted_value["amount"]
         bid_data.update({
-            "weighted_amount": weighted_value["amount"],
+            "amount_weighted": weighted_value["amount"],
             "denominator": weighted_value["denominator"] if "denominator" in weighted_value else 1,
             "addition": weighted_value["addition"] if "addition" in weighted_value else 0,
         })
