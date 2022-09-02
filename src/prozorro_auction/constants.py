@@ -11,6 +11,7 @@ class ProcurementMethodType(Enum):
     CLOSE_FRAMEWORK_AGREEMENT_UA = "closeFrameworkAgreementUA"
     CLOSE_FRAMEWORK_AGREEMENT_SELECTION_UA = "closeFrameworkAgreementSelectionUA"
     BELOW_THRESHOLD = "belowThreshold"
+    ABOVE_THRESHOLD = "aboveThreshold"
     ABOVE_THRESHOLD_EU = "aboveThresholdEU"
     ABOVE_THRESHOLD_UA = "aboveThresholdUA"
     ABOVE_THRESHOLD_UA_DEFENSE = "aboveThresholdUA.defense"
@@ -37,6 +38,7 @@ PROCUREMENT_METHOD_TYPES_DEFAULT = [
     ProcurementMethodType.CLOSE_FRAMEWORK_AGREEMENT_UA.value,
     ProcurementMethodType.CLOSE_FRAMEWORK_AGREEMENT_SELECTION_UA.value,
     ProcurementMethodType.BELOW_THRESHOLD.value,
+    ProcurementMethodType.ABOVE_THRESHOLD.value,
     ProcurementMethodType.ABOVE_THRESHOLD_EU.value,
     ProcurementMethodType.ABOVE_THRESHOLD_UA.value,
     ProcurementMethodType.ABOVE_THRESHOLD_UA_DEFENSE.value,
