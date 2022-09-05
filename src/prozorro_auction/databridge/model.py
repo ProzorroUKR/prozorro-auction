@@ -233,7 +233,7 @@ def get_auction_type(auction, tender):
         else:
             return "weightedValue" in bid
 
-    if is_mixed_auction(tender):
+    if is_mixed_auction(auction, tender):
         return AuctionType.MIXED.value
     if tender.get("awardCriteria", "") == "lifeCycleCost" and auction["criteria"]:
         return AuctionType.LCC.value
