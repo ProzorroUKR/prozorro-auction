@@ -226,9 +226,14 @@ def get_auction_type(auction, tender):
     :param tender:
     :return:
     """
-    is_weighted_value_in_bid = "weightedValue" in tender["bids"][0]
-    is_weighted_value_in_lot_values = "weightedValue" in tender["bids"][0].get("lotValues", [{}])[0]
-    if is_weighted_value_in_bid or is_weighted_value_in_lot_values:
+    def is_mixed_auction(auction, tender) -> bool:
+        bid = tender["bids"][0]
+        if auction["lot_id"]:
+            return any("weightedValue" in lv for lv in bid["lotValues"] if auction["lot_id"] == lv["relatedLot"])
+        else:
+            return "weightedValue" in bid
+
+    if is_mixed_auction(tender):
         return AuctionType.MIXED.value
     if tender.get("awardCriteria", "") == "lifeCycleCost" and auction["criteria"]:
         return AuctionType.LCC.value
