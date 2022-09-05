@@ -228,7 +228,7 @@ def get_auction_type(auction, tender):
     """
     def is_mixed_auction(auction, tender) -> bool:
         bid = tender["bids"][0]
-        if auction["lot_id"]:
+        if auction.get("lot_id"):
             return any("weightedValue" in lv for lv in bid["lotValues"] if auction["lot_id"] == lv["relatedLot"])
         else:
             return "weightedValue" in bid
