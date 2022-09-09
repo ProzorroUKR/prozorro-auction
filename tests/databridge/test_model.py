@@ -20,6 +20,7 @@ from tests.base import (
     test_tender_data_multilot,
     test_tender_data_features,
     test_tender_data_lcc,
+    test_tender_data_mixed,
     test_tender_data_esco,
     test_tender_data_esco_features,
     test_tender_data_esco_multilot,
@@ -217,6 +218,24 @@ class GetDataFromTenderTestCase(unittest.TestCase):
             self.assert_auction_bid_fields(bid_result, bid)
             self.assertEqual(bid_result["responses"], bid["requirementResponses"])
 
+    def assert_auction_mixed(self, tender):
+        results = list(get_data_from_tender(tender))
+        self.assert_auction_keys(results)
+        self.assertEqual(len(results), 1)
+        result = results[0]
+        self.assert_auction_fields(result, tender)
+        self.assertEqual(result["auction_type"], "mixed")
+        self.assertEqual(result["features"], tender["features"])
+        self.assertEqual(len(result["criteria"]), 4)
+        self.assertEqual(result["criteria"], tender["criteria"])
+        self.assertEqual(len(result["bids"]), 2)
+        for bid_result in result["bids"]:
+            bid = next(filter(
+                lambda bid: bid["id"] == bid_result["id"],
+                tender["bids"]
+            ))
+            self.assert_auction_bid_fields(bid_result, bid)
+
     def test_get_data_default(self):
         tender = deepcopy(test_tender_data)
         self.assert_auction_default(tender)
@@ -248,6 +267,10 @@ class GetDataFromTenderTestCase(unittest.TestCase):
         tender = deepcopy(test_tender_data_lcc)
         self.assert_auction_lcc(tender)
 
+    def test_get_data_mixed(self):
+        tender = deepcopy(test_tender_data_mixed)
+        self.assert_auction_mixed(tender)
+
 
 class GenerateLotAuctionIdTestCase(unittest.TestCase):
 
@@ -264,19 +287,24 @@ class GenerateLotAuctionIdTestCase(unittest.TestCase):
 class GetAuctionTypeTestCase(unittest.TestCase):
 
     def test_default(self):
-        tender = {}
+        tender = {"bids": [{}]}
         auction = {"features": [], "criteria": []}
         self.assertEqual(get_auction_type(auction, tender), "default")
 
     def test_meat(self):
-        tender = {}
+        tender = {"bids": [{}]}
         auction = {"features": [{}], "criteria": []}
         self.assertEqual(get_auction_type(auction, tender), "meat")
 
     def test_lcc(self):
-        tender = {"awardCriteria": "lifeCycleCost"}
+        tender = {"awardCriteria": "lifeCycleCost", "bids": [{}]}
         auction = {"features": [], "criteria": [{}]}
         self.assertEqual(get_auction_type(auction, tender), "lcc")
+
+    def test_mixed(self):
+        tender = {"awardCriteria": "lifeCycleCost", "bids":[{"weightedValue": {}}]}
+        auction = {"features": [], "criteria": [{}]}
+        self.assertEqual(get_auction_type(auction, tender), "mixed")
 
 
 class IsAuctionCancelledTestCase(unittest.TestCase):
