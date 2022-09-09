@@ -199,6 +199,7 @@ def filter_items_keys(items):
         "relatedLot",
     ))
 
+
 def filter_active_bids(bids):
     """
     Filter bids with active status.
@@ -219,11 +220,21 @@ def get_auction_type(auction, tender):
     - default
     - meat (if tender has features)
     - lcc (if awardCriteria equal to lifeCycleCost)
+    - mixed (if bids has weightedValue)
 
     :param auction:
     :param tender:
     :return:
     """
+    def is_mixed_auction(auction, tender) -> bool:
+        bid = tender["bids"][0]
+        if auction.get("lot_id"):
+            return any("weightedValue" in lv for lv in bid["lotValues"] if auction["lot_id"] == lv["relatedLot"])
+        else:
+            return "weightedValue" in bid
+
+    if is_mixed_auction(auction, tender):
+        return AuctionType.MIXED.value
     if tender.get("awardCriteria", "") == "lifeCycleCost" and auction["criteria"]:
         return AuctionType.LCC.value
     if auction["features"]:

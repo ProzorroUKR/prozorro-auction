@@ -8,6 +8,7 @@ from prozorro_auction.databridge.importers import (
     AuctionDefaultBidImporter,
     AuctionMEATBidImporter,
     AuctionLCCBidImporter,
+    AuctionMixedBidImporter,
 )
 
 from tests.base import (
@@ -15,6 +16,7 @@ from tests.base import (
     test_tender_data_multilot,
     test_tender_data_features,
     test_tender_data_lcc,
+    test_tender_data_mixed,
 )
 
 
@@ -72,7 +74,7 @@ class ImportBidMEATTestCase(unittest.TestCase):
         )
 
     def test_bid(self):
-        tender = deepcopy(test_tender_data_features)
+        tender = deepcopy(test_tender_data_mixed)
         features = tender["features"]
         bid = tender["bids"][0]
         parameters = bid["parameters"]
@@ -157,3 +159,35 @@ class ImportBidLCCTestCase(unittest.TestCase):
         self.assertEqual(result["responses"], bid["requirementResponses"])
         self.assertEqual(result["non_price_cost"], expected_non_price_cost)
         self.assertEqual(result["amount_weighted"], bid["value"]["amount"] + expected_non_price_cost)
+
+
+class ImportBidMixedTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.expected_keys = (
+            "id",
+            "hash",
+            "name",
+            "date",
+            "value",
+            "addition",
+            "denominator",
+            "amount_weighted",
+        )
+
+    def test_bid(self):
+        tender = deepcopy(test_tender_data_mixed)
+        bid = tender["bids"][0]
+
+        result = AuctionMixedBidImporter(bid).import_auction_bid_data()
+
+        self.assertTrue(set(result.keys()).issubset(self.expected_keys))
+
+        self.assertEqual(result["id"], bid["id"])
+        self.assertEqual(result["name"], bid["tenderers"][0]["name"])
+        self.assertEqual(result["date"], bid["date"])
+        self.assertEqual(result["value"], bid["value"])
+        self.assertEqual(result["addition"], bid["weightedValue"]["addition"])
+        self.assertEqual(result["denominator"], bid["weightedValue"]["denominator"])
+        self.assertEqual(result["amount_weighted"], bid["weightedValue"]["amount"])

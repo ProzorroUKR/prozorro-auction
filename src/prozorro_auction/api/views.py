@@ -90,7 +90,7 @@ async def post_bid(request):
                 f"Bidder {bidder_id} with client_id {client_id} placed bid "
                 f"with total amount {posted_bid['amountPerformance']}, "
                 f"yearly payments percentage = {posted_bid['yearlyPaymentsPercentage']}, "
-                f"contract duraction years = {posted_bid['contractDuration']['years']}, "
+                f"contract duration years = {posted_bid['contractDuration']['years']}, "
                 f"contract duration days = {posted_bid['contractDuration']['days']} "
                 f"in {get_now().isoformat()}"
             )  # "let me speak from my heart"
@@ -146,6 +146,12 @@ async def check_authorization(request):
 
         if "non_price_cost" in bid:
             resp_data["non_price_cost"] = bid["non_price_cost"]
+
+        if "addition" in bid:
+            resp_data["addition"] = bid["addition"]
+
+        if "denominator" in bid:
+            resp_data["denominator"] = bid["denominator"]
 
         return json_response(resp_data, status=200)
     else:
