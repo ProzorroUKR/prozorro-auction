@@ -227,11 +227,23 @@ def get_auction_type(auction, tender):
     :return:
     """
     def is_mixed_auction(auction, tender) -> bool:
-        bid = tender["bids"][0]
+        active_bid = None
+        for bid in tender["bids"]:
+            if bid.get("status", "active") == "active":
+                active_bid = bid
+                break
+
+        if not active_bid:
+            return False
+
         if auction.get("lot_id"):
-            return any("weightedValue" in lv for lv in bid["lotValues"] if auction["lot_id"] == lv["relatedLot"])
+            return any(
+                "weightedValue" in lv
+                for lv in active_bid.get("lotValues", "")
+                if auction["lot_id"] == lv["relatedLot"]
+            )
         else:
-            return "weightedValue" in bid
+            return "weightedValue" in active_bid
 
     if is_mixed_auction(auction, tender):
         return AuctionType.MIXED.value
