@@ -37,19 +37,26 @@ async def patch_tender_auction(session, tender_id, lot_id, json):
 
 
 async def request_tender(session, tender_id, json=None, method_name="get", url_suffix="", retries=20):
+    retried = 0
     while True:
         try:
             result = await base_request_tender(session=session, tender_id=tender_id, json=json,
                                                method_name=method_name, url_suffix=url_suffix)
         except RequestRetryException as e:
-            if e.response and e.response.status in (403, 404):
+            if e.response and e.response.status in (403,):
                 logger.warning(f"Skip processing {tender_id} as we get {e.response.status} response")
                 raise SkipException()
 
-            retries -= 1
-            if retries < 1:
-                logger.critical("Too many retries while requesting tender",
+            if retried > retries:
+                if e.response and e.response.status in (404,):
+                    logger.warning(
+                        f"Skip processing {tender_id} after {retries} retries "
+                        f"as we get {e.response.status} response"
+                    )
+                    raise SkipException()
+                logger.critical(f"Too many retries ({retried}) while requesting tender",
                                 extra={"MESSAGE_ID": "TOO_MANY_REQUEST_RETRIES"})
+            retried += 1
             await asyncio.sleep(e.timeout)
         else:
             return result
