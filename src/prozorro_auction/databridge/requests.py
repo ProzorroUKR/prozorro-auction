@@ -42,8 +42,8 @@ async def request_tender(session, tender_id, json=None, method_name="get", url_s
             result = await base_request_tender(session=session, tender_id=tender_id, json=json,
                                                method_name=method_name, url_suffix=url_suffix)
         except RequestRetryException as e:
-            if e.response and e.response.status == 403:
-                logger.warning(f"Skip processing {tender_id} as we get 403 response")
+            if e.response and e.response.status in (403, 404):
+                logger.warning(f"Skip processing {tender_id} as we get {e.response.status} response")
                 raise SkipException()
 
             retries -= 1
