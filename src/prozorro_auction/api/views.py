@@ -160,17 +160,25 @@ async def check_authorization(request):
 
 # --- WebSockets ----
 
+MESSAGE_CHANGES_FOUND = 1
+MESSAGE_TIMEOUT = 0
+
 class AuctionFeed:
+
     def __init__(self):
         self._auctions = {}
         asyncio.create_task(self._process_changes_loop())
 
-    async def get(self, auction_id, socket):
-        auction = self._auctions[auction_id]
-        subscribers = auction["subscribers"]
+    async def get(self, auction_id, socket, timeout=60):
+        auction = self._auctions.get(auction_id, {})
+        subscribers = auction.get("subscribers", {})
         subscriber = subscribers.get(socket)
-        await subscriber.get()
-        auction_doc = auction["doc"]
+        if subscriber:
+            asyncio.create_task(self._process_timeout(subscriber, timeout))
+            message = await subscriber.get()
+            if message == MESSAGE_TIMEOUT:
+                return
+        auction_doc = auction.get("doc")
         return auction_doc
 
     def subscribe(self, auction_id, socket):
@@ -194,6 +202,9 @@ class AuctionFeed:
             logger.info(f"Empty subscribers set for {auction_id}: discarding its cached object")
             del self._auctions[auction_id]
 
+    async def _process_timeout(self, subscriber, timeout):
+        await asyncio.sleep(timeout)
+        await subscriber.put(MESSAGE_TIMEOUT)
 
     async def _process_changes_loop(self):
 
@@ -213,7 +224,7 @@ class AuctionFeed:
                                 dead_sockets.append(socket)
                                 continue
 
-                            subscriber.put_nowait(1)
+                            subscriber.put_nowait(MESSAGE_CHANGES_FOUND)
 
                         for socket in dead_sockets:
                             await socket.close()
@@ -235,10 +246,10 @@ async def ping_ws(socket):
         while not socket.closed:
             await asyncio.sleep(5)
             await socket.send_str("PING")  # send it, so client is sure that connection is fine
-            res = await socket.receive(timeout=5)  # we do actually nothing if there is no pong
-            logger.debug(f"Ping response: {res.data}")
+            res = await socket.receive(timeout=5)
     except (ConnectionResetError, asyncio.CancelledError, asyncio.TimeoutError) as e:
-        logger.info(f"Error at ping {e}")
+        logger.info(f"Error at ping: {e}")
+        await socket.close()
 
 
 @routes.get('/api/auctions/{auction_id}/ws')
@@ -258,8 +269,9 @@ async def ws_handler(request):
     auction_feed.subscribe(auction_id, socket)
     try:
         while not socket.closed:
-            auction = await auction_feed.get(auction_id, socket)
-            await socket.send_json(auction, dumps=json_dumps)
+            auction = await auction_feed.get(auction_id, socket, timeout=60)
+            if auction:
+                await socket.send_json(auction, dumps=json_dumps)
     except ConnectionResetError as e:
         logger.info(f"ConnectionResetError at send updates {e}")
     finally:
