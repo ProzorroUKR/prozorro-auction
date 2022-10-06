@@ -16,7 +16,6 @@ def get_auction_feed():
 
 
 MESSAGE_CHANGES_FOUND = 1
-MESSAGE_TIMEOUT = 0
 
 class AuctionFeed:
 
@@ -24,15 +23,12 @@ class AuctionFeed:
         self._auctions = {}
         asyncio.create_task(self._process_changes_loop())
 
-    async def get(self, auction_id, socket, timeout=60):
+    async def get(self, auction_id, socket):
         auction = self._auctions.get(auction_id, {})
         subscribers = auction.get("subscribers", {})
         subscriber = subscribers.get(socket)
         if subscriber:
-            asyncio.create_task(self._process_timeout(subscriber, timeout))
-            message = await subscriber.get()
-            if message == MESSAGE_TIMEOUT:
-                return
+            await subscriber.get()
         auction_doc = auction.get("doc")
         return auction_doc
 
@@ -56,10 +52,6 @@ class AuctionFeed:
         if not subscribers:
             logger.info(f"Empty subscribers set for {auction_id}: discarding its cached object")
             del self._auctions[auction_id]
-
-    async def _process_timeout(self, subscriber, timeout):
-        await asyncio.sleep(timeout)
-        await subscriber.put(MESSAGE_TIMEOUT)
 
     async def _process_changes_loop(self):
 
@@ -86,7 +78,7 @@ class AuctionFeed:
                             logger.info('Force close of socket that is not reading data')
                             subscribers.pop(socket)
 
-async def ping_ws(socket):
+async def ping_ws(socket, task):
     try:
         while not socket.closed:
             await asyncio.sleep(5)
@@ -94,4 +86,4 @@ async def ping_ws(socket):
             res = await socket.receive(timeout=5)
     except (ConnectionResetError, asyncio.CancelledError, asyncio.TimeoutError) as e:
         logger.info(f"Error at ping: {e}")
-        await socket.close()
+        task.cancel()

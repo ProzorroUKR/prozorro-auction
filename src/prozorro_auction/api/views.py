@@ -170,18 +170,19 @@ async def ws_handler(request):
     logger.info('Feed client connected')
 
     loop = asyncio.get_event_loop()
-    t = loop.create_task(ping_ws(socket))
+    t = loop.create_task(ping_ws(socket, asyncio.current_task()))
     logger.info(f'Ping launched {t}')
 
     auction_feed = get_auction_feed()
     auction_feed.subscribe(auction_id, socket)
     try:
         while not socket.closed:
-            auction = await auction_feed.get(auction_id, socket, timeout=60)
-            if auction:
-                await socket.send_json(auction, dumps=json_dumps)
+            auction = await auction_feed.get(auction_id, socket)
+            await socket.send_json(auction, dumps=json_dumps)
     except ConnectionResetError as e:
         logger.info(f"ConnectionResetError at send updates {e}")
+    except asyncio.CancelledError:
+        pass
     finally:
         logger.info("Unsubscribe socket")
         auction_feed.unsubscribe(auction_id, socket)
