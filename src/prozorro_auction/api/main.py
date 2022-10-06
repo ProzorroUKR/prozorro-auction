@@ -1,7 +1,9 @@
 import sentry_sdk
+
+from prozorro_auction.api.logging import AccessLogger
 from prozorro_auction.settings import API_PORT, SENTRY_DSN, SENTRY_ENVIRONMENT
 from prozorro_auction.api.views import routes
-from prozorro_auction.logging import AccessLogger, setup_logging, update_log_context
+from prozorro_auction.logging import setup_logging, update_log_context
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
 from aiohttp import web
 

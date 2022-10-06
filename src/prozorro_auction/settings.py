@@ -62,14 +62,4 @@ LATENCY_TIME = float(os.getenv("LATENCY_TIME", 2 * 60))
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT")
 
-
-def get_deprecated_auction_config_path():
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "deprecated_auction_config.json")
-
-
-DEPRECATED_AUCTION_CONFIG_PATH = os.environ.get(
-    "DEPRECATED_AUCTION_CONFIG_PATH", get_deprecated_auction_config_path()
-)
-
-
 MASK_OBJECT_DATA = bool(os.environ.get("DEFAULT_MASK_OBJECT_DATA", False))
