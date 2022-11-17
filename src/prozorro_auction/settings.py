@@ -62,4 +62,4 @@ LATENCY_TIME = float(os.getenv("LATENCY_TIME", 2 * 60))
 SENTRY_DSN = os.environ.get("SENTRY_DSN")
 SENTRY_ENVIRONMENT = os.environ.get("SENTRY_ENVIRONMENT")
 
-MASK_OBJECT_DATA = bool(os.environ.get("DEFAULT_MASK_OBJECT_DATA", False))
+MASK_OBJECT_DATA_SINGLE = bool(os.environ.get("DEFAULT_MASK_OBJECT_DATA_SINGLE", False))

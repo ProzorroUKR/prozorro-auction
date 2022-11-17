@@ -11,15 +11,43 @@ import logging
 logger = logging.getLogger(__name__)
 
 LIST_FIELDS = (
-    "_id", "title", "title_en", "start_at", "procurementMethodType", "tenderID",
+    "_id",
+    "title",
+    "title_en",
+    "start_at",
+    "procurementMethodType",
+    "tenderID",
     "procuringEntity",
+    # masking
+    "is_masked",
 )
+
 GET_FIELDS = (
-    "_id", "auction_type", "timer",
-    "procurementMethodType", "tenderID", "title", "title_en", "procuringEntity", "items", "features",
-    "start_at", "stages", "current_stage", "initial_bids", "results", "modified", "minimalStep",
+    "_id",
+    "auction_type",
+    "timer",
+    "procurementMethodType",
+    "tenderID",
+    "title",
+    "title_en",
+    "procuringEntity",
+    "items",
+    "features",
+    "start_at",
+    "stages",
+    "current_stage",
+    "initial_bids",
+    "results",
+    "modified",
+    "minimalStep",
     "lot",
-    "minimalStepPercentage", "noticePublicationDate", "NBUdiscountRate", "value" # esco
+    "value",
+    # esco
+    "minimalStepPercentage",
+    "noticePublicationDate",
+    "NBUdiscountRate",
+    # masking
+    "is_masked",
 )
 
 
