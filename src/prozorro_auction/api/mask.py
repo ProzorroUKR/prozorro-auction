@@ -1,9 +1,25 @@
-from prozorro_auction.settings import MASK_OBJECT_DATA
-from hashlib import sha224
-import standards
+from prozorro_auction.settings import MASK_OBJECT_DATA_SINGLE
 
-MASK_IDENTIFIER_IDS = set(standards.load("organizations/mask_identifiers.json"))
 
+MASK_FIELDS = (
+    "items",
+    "features",
+    "value",
+    "minimalStep",
+    "procuringEntity",
+    "stages",
+    "initial_bids",
+    "results",
+)
+
+IGNORE_KEYS = {
+    "id",
+    "bidder_id",
+    "start",
+    "type",
+    "currency",
+    "kind",
+}
 
 def mask_simple_data(v):
     if isinstance(v, str):
@@ -16,15 +32,7 @@ def mask_simple_data(v):
 
 
 def ignore_mask(key):
-    ignore_keys = {
-        "id",
-        "bidder_id",
-        "start",
-        "type",
-        "currency",
-        "kind",
-    }
-    if key in ignore_keys:
+    if key in IGNORE_KEYS:
         return True
     elif key.startswith("time") or key.endswith("time"):
         return True
@@ -46,22 +54,15 @@ def mask_process_compound(data):
 
 
 def mask_data(obj):
-    identifier_id = obj.get("procuringEntity", {}).get("identifier", {}).get("id")
+    is_masked = obj.pop("is_masked", False)
     if (
-        MASK_OBJECT_DATA
-        and identifier_id
-        and sha224(identifier_id.encode()).hexdigest() in MASK_IDENTIFIER_IDS
+        MASK_OBJECT_DATA_SINGLE and is_masked
         and "timer" not in obj  # finished
     ):
         obj["title"] = "Тимчасово замасковано, щоб русня не підглядала"
         obj["title_en"] = "It is temporarily disguised so that the rusnya does not spy"
         obj.pop("title_ru", "")
 
-        for k in (
-            "items", "features",
-            "value", "minimalStep",
-            "procuringEntity",
-            "stages", "initial_bids", "results",
-        ):
+        for k in MASK_FIELDS:
             if k in obj:
                 obj[k] = mask_process_compound(obj[k])
